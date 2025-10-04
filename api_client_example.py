@@ -10,7 +10,7 @@ import base64
 import os
 
 # API服务器地址
-API_BASE_URL = "http://127.0.0.1:5000"
+API_BASE_URL = "http://127.0.0.1:5156"
 
 def check_health():
     """检查API服务器健康状态"""

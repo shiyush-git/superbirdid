@@ -137,6 +137,11 @@ class SuperBirdIDGUI:
         # 配置变量（默认全部启用，隐藏在高级选项中）
         self.use_yolo = tk.BooleanVar(value=True)
         self.use_gps = tk.BooleanVar(value=True)
+
+        # API服务器状态
+        self.api_server_running = False
+        self.api_server_process = None
+        self.api_port = 5156
         self.use_ebird = tk.BooleanVar(value=True)
         self.show_advanced = tk.BooleanVar(value=False)
 
@@ -934,6 +939,60 @@ class SuperBirdIDGUI:
 
         # 温度对比选项已移除，保持界面简洁
 
+        # API服务器控制
+        api_frame = tk.Frame(content, bg=self.colors['card'])
+        api_frame.pack(fill=tk.X, pady=15)
+
+        api_title = tk.Label(api_frame,
+                            text="🌐 API后台服务",
+                            font=self.fonts['body'],
+                            fg=self.colors['text'],
+                            bg=self.colors['card'])
+        api_title.pack(anchor='w')
+
+        api_desc = tk.Label(api_frame,
+                           text="    启动HTTP API服务，允许外部程序（如Lightroom）调用识别功能",
+                           font=self.fonts['small'],
+                           fg=self.colors['text_secondary'],
+                           bg=self.colors['card'])
+        api_desc.pack(anchor='w', pady=(2, 8))
+
+        # API控制按钮区域
+        api_control_frame = tk.Frame(api_frame, bg=self.colors['card'])
+        api_control_frame.pack(fill=tk.X, padx=20)
+
+        # API状态指示器
+        self.api_status_label = tk.Label(api_control_frame,
+                                         text="● 未运行",
+                                         font=self.fonts['small'],
+                                         fg='#888888',
+                                         bg=self.colors['card'])
+        self.api_status_label.pack(side=tk.LEFT, padx=(0, 15))
+
+        # 启动/停止按钮
+        self.api_toggle_btn = tk.Button(api_control_frame,
+                                        text="启动API服务",
+                                        font=self.fonts['small'],
+                                        bg='#ffffff',
+                                        fg='#000000',
+                                        activebackground='#e0e0e0',
+                                        activeforeground='#000000',
+                                        relief='solid',
+                                        bd=2,
+                                        padx=15,
+                                        pady=5,
+                                        cursor='hand2',
+                                        command=self.toggle_api_server)
+        self.api_toggle_btn.pack(side=tk.LEFT)
+
+        # 端口号显示
+        api_port_label = tk.Label(api_control_frame,
+                                  text=f"端口: {self.api_port}",
+                                  font=self.fonts['small'],
+                                  fg=self.colors['text_secondary'],
+                                  bg=self.colors['card'])
+        api_port_label.pack(side=tk.LEFT, padx=(15, 0))
+
     def toggle_advanced(self):
         """切换高级选项显示"""
         if self.show_advanced.get():
@@ -1659,9 +1718,81 @@ class SuperBirdIDGUI:
         else:
             messagebox.showwarning("失败", message)
 
+    def toggle_api_server(self):
+        """启动或停止API服务器"""
+        if self.api_server_running:
+            # 停止服务器
+            self.stop_api_server()
+        else:
+            # 启动服务器
+            self.start_api_server()
+
+    def start_api_server(self):
+        """启动API服务器"""
+        try:
+            import subprocess
+            import sys
+
+            # 获取Python解释器路径
+            python_path = sys.executable
+
+            # API服务器脚本路径
+            api_script = os.path.join(script_dir, 'SuperBirdID_API.py')
+
+            # 启动API服务器进程
+            self.api_server_process = subprocess.Popen(
+                [python_path, api_script, '--port', str(self.api_port)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                start_new_session=True  # 使进程独立运行
+            )
+
+            self.api_server_running = True
+
+            # 更新UI
+            self.api_status_label.config(text="● 运行中", fg='#4CAF50')
+            self.api_toggle_btn.config(text="停止API服务")
+            self.update_status(f"✓ API服务器已启动 (http://127.0.0.1:{self.api_port})")
+
+        except Exception as e:
+            messagebox.showerror("错误", f"启动API服务器失败:\n{e}")
+            self.api_server_running = False
+
+    def stop_api_server(self):
+        """停止API服务器"""
+        try:
+            import subprocess
+
+            if self.api_server_process:
+                # 终止进程
+                self.api_server_process.terminate()
+                try:
+                    # 等待进程结束（最多3秒）
+                    self.api_server_process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    # 强制杀死
+                    self.api_server_process.kill()
+                    self.api_server_process.wait()
+
+                self.api_server_process = None
+
+            self.api_server_running = False
+
+            # 更新UI
+            self.api_status_label.config(text="● 未运行", fg='#888888')
+            self.api_toggle_btn.config(text="启动API服务")
+            self.update_status("✓ API服务器已停止")
+
+        except Exception as e:
+            messagebox.showerror("错误", f"停止API服务器失败:\n{e}")
+
     def on_closing(self):
         """关闭窗口时的清理操作"""
         try:
+            # 停止API服务器
+            if self.api_server_running:
+                self.stop_api_server()
+
             # 清理临时剪贴板文件
             if hasattr(self, '_temp_clipboard_file') and os.path.exists(self._temp_clipboard_file):
                 try:

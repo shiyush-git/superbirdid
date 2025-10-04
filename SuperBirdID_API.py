@@ -334,7 +334,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='SuperBirdID API服务器')
     parser.add_argument('--host', default='127.0.0.1', help='监听地址（默认127.0.0.1）')
-    parser.add_argument('--port', type=int, default=5000, help='监听端口（默认5000）')
+    parser.add_argument('--port', type=int, default=5156, help='监听端口（默认5156）')
     parser.add_argument('--debug', action='store_true', help='启用调试模式')
 
     args = parser.parse_args()
