@@ -24,6 +24,7 @@ except ImportError:
 from SuperBirdId import (
     load_image, lazy_load_classifier, lazy_load_bird_info,
     lazy_load_database, extract_gps_from_exif, get_region_from_gps,
+    write_bird_name_to_exif,
     YOLOBirdDetector, YOLO_AVAILABLE, EBIRD_FILTER_AVAILABLE,
     RAW_SUPPORT, script_dir
 )
@@ -1186,6 +1187,12 @@ class SuperBirdIDGUI:
                         processed_image = cropped
                         # 发送裁剪后的图片到界面显示
                         self.progress_queue.put(("cropped_image", cropped, msg))
+                    else:
+                        # YOLO未检测到鸟类，显示消息
+                        self.progress_queue.put(("progress", f"⚠️ {msg}"))
+                else:
+                    # 图片太小，跳过YOLO
+                    self.progress_queue.put(("progress", f"ℹ️ 图片尺寸 {width}x{height}，跳过YOLO检测"))
 
             # 识别
             self.progress_queue.put(("progress", "🧠 AI深度识别中，请稍候..."))
@@ -1357,6 +1364,16 @@ class SuperBirdIDGUI:
 
         # 绑定窗口大小变化事件
         self.root.bind('<Configure>', lambda e: self.adjust_card_layout())
+
+        # 自动将第一名识别结果写入EXIF（仅支持JPEG和RAW格式）
+        if results and self.current_image_path:
+            top_result = results[0]
+            bird_name = top_result['cn_name']  # 使用中文名
+            success, message = write_bird_name_to_exif(self.current_image_path, bird_name)
+
+            # 显示写入结果（仅在成功时显示，失败静默跳过PNG等格式）
+            if success:
+                self.update_status(message)
 
     def adjust_card_layout(self):
         """根据窗口宽度调整卡片布局"""

@@ -364,6 +364,66 @@ def extract_gps_from_exif(image_path):
     # 使用PIL fallback
     return extract_gps_from_exif_pil(image_path)
 
+def write_bird_name_to_exif(image_path, bird_name):
+    """
+    将鸟种名称写入图片EXIF的Title字段
+    仅支持JPEG和RAW格式，跳过PNG等粘贴格式
+
+    Args:
+        image_path: 图片路径
+        bird_name: 鸟种名称（中文或英文）
+
+    Returns:
+        (success: bool, message: str)
+    """
+    # 检查文件是否存在
+    if not os.path.exists(image_path):
+        return False, f"文件不存在: {image_path}"
+
+    # 获取文件扩展名
+    file_ext = os.path.splitext(image_path)[1].lower()
+
+    # 支持的格式列表
+    supported_formats = [
+        '.jpg', '.jpeg', '.jpe', '.jfif',  # JPEG
+        '.cr2', '.cr3',     # Canon RAW
+        '.nef', '.nrw',     # Nikon RAW
+        '.arw', '.srf',     # Sony RAW
+        '.dng',             # Adobe RAW
+        '.raf',             # Fujifilm RAW
+        '.orf',             # Olympus RAW
+        '.rw2',             # Panasonic RAW
+        '.pef',             # Pentax RAW
+        '.srw',             # Samsung RAW
+        '.raw',             # 通用RAW
+        '.rwl',             # Leica RAW
+    ]
+
+    # 跳过不支持的格式（如PNG）
+    if file_ext not in supported_formats:
+        return False, f"跳过格式 {file_ext}（仅支持JPEG和RAW格式）"
+
+    # 必须使用ExifTool才能写入
+    if not EXIFTOOL_AVAILABLE:
+        return False, "ExifTool不可用，无法写入EXIF"
+
+    try:
+        with exiftool.ExifToolHelper() as et:
+            # 写入Title字段（EXIF:ImageDescription）
+            et.set_tags(
+                image_path,
+                tags={
+                    "EXIF:ImageDescription": bird_name,
+                    "XMP:Title": bird_name,
+                },
+                params=["-overwrite_original"]  # 不创建备份文件
+            )
+
+        return True, f"✓ 已写入EXIF Title: {bird_name}"
+
+    except Exception as e:
+        return False, f"写入EXIF失败: {e}"
+
 def load_image(image_path):
     """
     增强的图像加载函数 - 支持标准格式和RAW格式
