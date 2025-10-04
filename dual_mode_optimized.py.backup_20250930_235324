@@ -1,0 +1,409 @@
+#!/usr/bin/env python3
+"""
+SuperBirdID - 双模式智能组合版
+同时运行平衡模式和快速模式，智能选择最佳结果
+"""
+import torch
+import numpy as np
+from PIL import Image
+import cv2
+import time
+
+# 导入原始模块的所有功能
+try:
+    from SuperBirdId import *
+except ImportError as e:
+    print(f"❌ 导入模块失败: {e}")
+    exit(1)
+
+def smart_resize_balanced(image, target_size=224):
+    """平衡模式：传统256→224预处理（测试证明最稳定）"""
+    width, height = image.size
+    max_dimension = max(width, height)
+
+    if max_dimension < 1000:
+        final_image = image.resize((target_size, target_size), Image.LANCZOS)
+        method_name = "直接调整(小图像)"
+    else:
+        # 传统256→224方法
+        resized_256 = image.resize((256, 256), Image.LANCZOS)
+        left = (256 - target_size) // 2
+        top = (256 - target_size) // 2
+        final_image = resized_256.crop((left, top, left + target_size, top + target_size))
+        method_name = "传统256→224(平衡模式)"
+
+    return final_image, method_name
+
+def smart_resize_fast(image, target_size=224):
+    """快速模式：直接224x224"""
+    final_image = image.resize((target_size, target_size), Image.LANCZOS)
+    return final_image, "直接224x224(快速模式)"
+
+def run_single_mode_internal(image, preprocessing_func, model, bird_data, ebird_species_set,
+                           use_gps_precise, db_manager, confidence_threshold=1.0):
+    """运行单个模式的识别（内部函数）"""
+
+    # 预处理
+    final_image, method_desc = preprocessing_func(image, target_size=224)
+
+    # 转换为张量
+    img_array = np.array(final_image)
+    bgr_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+
+    # ImageNet标准化
+    mean = np.array([0.406, 0.456, 0.485])
+    std = np.array([0.225, 0.224, 0.229])
+
+    normalized_array = (bgr_array / 255.0 - mean) / std
+    input_tensor = torch.from_numpy(normalized_array).permute(2, 0, 1).unsqueeze(0).float()
+
+    # 推理
+    start_time = time.time()
+    with torch.no_grad():
+        output = model(input_tensor)
+    inference_time = time.time() - start_time
+
+    probabilities = torch.nn.functional.softmax(output[0], dim=0)
+    max_confidence = probabilities.max().item() * 100
+
+    # 提取结果
+    k = min(len(probabilities), len(bird_data), 1000)
+    all_probs, all_catid = torch.topk(probabilities, k)
+
+    candidates = []
+
+    for i in range(all_probs.size(0)):
+        class_id = all_catid[i].item()
+        raw_confidence = all_probs[i].item() * 100
+
+        if raw_confidence < confidence_threshold:
+            continue
+
+        try:
+            if class_id < len(bird_data) and len(bird_data[class_id]) >= 2:
+                bird_name_cn = bird_data[class_id][0]
+                bird_name_en = bird_data[class_id][1]
+                name = f"{bird_name_cn} ({bird_name_en})"
+
+                # eBird过滤和置信度调整
+                ebird_boost = 1.0
+                ebird_match = False
+                ebird_info = ""
+
+                if ebird_species_set and db_manager:
+                    ebird_code = db_manager.get_ebird_code_by_english_name(bird_name_en)
+                    if ebird_code and ebird_code in ebird_species_set:
+                        if use_gps_precise:
+                            ebird_boost = 1.5  # GPS精确50%提升
+                            ebird_info = " [GPS精确✓]"
+                        else:
+                            ebird_boost = 1.2  # 国家级20%提升
+                            ebird_info = " [eBird✓]"
+                        ebird_match = True
+
+                adjusted_confidence = min(raw_confidence * ebird_boost, 99.0)
+
+                # 获取鸟类区域信息
+                bird_region = get_bird_region(bird_name_en)
+                region_info = f" [区域: {bird_region}]" if bird_region != 'Unknown' else ""
+
+                candidates.append({
+                    'class_id': class_id,
+                    'raw_confidence': raw_confidence,
+                    'adjusted_confidence': adjusted_confidence,
+                    'name': name,
+                    'english_name': bird_name_en,
+                    'chinese_name': bird_name_cn,
+                    'ebird_match': ebird_match,
+                    'ebird_boost': ebird_boost,
+                    'display_info': region_info + ebird_info
+                })
+        except (IndexError, TypeError):
+            continue
+
+    # 按调整后置信度排序
+    candidates.sort(key=lambda x: x['adjusted_confidence'], reverse=True)
+
+    return {
+        'method_desc': method_desc,
+        'inference_time': inference_time,
+        'max_confidence': max_confidence,
+        'candidates': candidates[:10],  # 保留前10个候选
+        'total_candidates': len(candidates)
+    }
+
+def intelligent_dual_mode_recognition(image, ebird_species_set=None, use_gps_precise=False, db_manager=None):
+    """智能双模式识别：平衡模式 + 快速模式组合"""
+
+    print("🔄 正在运行双模式智能识别...")
+
+    # 加载模型和数据
+    model = lazy_load_classifier()
+    bird_data = lazy_load_bird_info()
+
+    # 运行两个模式
+    balanced_result = run_single_mode_internal(
+        image, smart_resize_balanced, model, bird_data,
+        ebird_species_set, use_gps_precise, db_manager
+    )
+
+    fast_result = run_single_mode_internal(
+        image, smart_resize_fast, model, bird_data,
+        ebird_species_set, use_gps_precise, db_manager
+    )
+
+    print(f"  📊 平衡模式: {balanced_result['method_desc']}, "
+          f"推理时间: {balanced_result['inference_time']:.3f}s, "
+          f"最高置信度: {balanced_result['max_confidence']:.2f}%")
+
+    print(f"  🚀 快速模式: {fast_result['method_desc']}, "
+          f"推理时间: {fast_result['inference_time']:.3f}s, "
+          f"最高置信度: {fast_result['max_confidence']:.2f}%")
+
+    # 智能选择策略
+    def calculate_mode_score(result):
+        """计算模式得分，重点考虑eBird GPS匹配的准确性"""
+        base_score = result['max_confidence']
+
+        # 检查前3个候选中是否有eBird匹配
+        ebird_candidates = []
+        for candidate in result['candidates'][:3]:
+            if candidate['ebird_match']:
+                ebird_candidates.append(candidate)
+
+        # eBird匹配的重大奖励
+        if ebird_candidates:
+            best_ebird_candidate = max(ebird_candidates, key=lambda x: x['adjusted_confidence'])
+
+            # 如果最佳eBird候选是GPS精确匹配，给予巨大奖励
+            if best_ebird_candidate['ebird_boost'] == 1.5:  # GPS精确
+                gps_bonus = 25  # GPS精确匹配+25分
+                base_score += gps_bonus
+
+                # 如果eBird候选在前2名，额外奖励
+                if best_ebird_candidate in result['candidates'][:2]:
+                    base_score += 15  # 前2名eBird候选额外+15分
+
+            elif best_ebird_candidate['ebird_boost'] == 1.2:  # 国家级
+                country_bonus = 15  # 国家匹配+15分
+                base_score += country_bonus
+
+        # 结果数量平衡
+        candidate_count = result['total_candidates']
+        if 2 <= candidate_count <= 8:
+            base_score += 2
+        elif candidate_count > 15:
+            base_score -= 1
+
+        return base_score
+
+    balanced_score = calculate_mode_score(balanced_result)
+    fast_score = calculate_mode_score(fast_result)
+
+    print(f"  ⚖️  智能评分: 平衡模式 {balanced_score:.2f} vs 快速模式 {fast_score:.2f}")
+
+    # 选择最佳模式
+    confidence_gap = abs(balanced_result['max_confidence'] - fast_result['max_confidence'])
+
+    if balanced_score > fast_score + 5:  # 平衡模式明显更好
+        primary_result = balanced_result
+        secondary_result = fast_result
+        selected_mode = "平衡模式"
+        reason = f"置信度优势 ({balanced_result['max_confidence']:.2f}% vs {fast_result['max_confidence']:.2f}%)"
+    elif fast_score > balanced_score + 3:  # 快速模式明显更好
+        primary_result = fast_result
+        secondary_result = balanced_result
+        selected_mode = "快速模式"
+        reason = f"综合评分优势 ({fast_score:.2f} vs {balanced_score:.2f})"
+    elif confidence_gap < 5 and fast_result['inference_time'] < balanced_result['inference_time'] * 0.8:
+        # 置信度相近但快速模式明显更快
+        primary_result = fast_result
+        secondary_result = balanced_result
+        selected_mode = "快速模式"
+        reason = f"速度优势 ({fast_result['inference_time']:.3f}s vs {balanced_result['inference_time']:.3f}s)"
+    else:
+        # 默认选择平衡模式（更稳定）
+        primary_result = balanced_result
+        secondary_result = fast_result
+        selected_mode = "平衡模式"
+        reason = "默认稳定选择"
+
+    print(f"  🎯 智能选择: {selected_mode} ({reason})")
+
+    # 结果融合：优先显示eBird GPS验证的物种
+    all_candidates = []
+    seen_species = set()
+
+    # 收集所有候选，标记来源
+    for candidate in primary_result['candidates'][:5]:
+        if candidate['english_name'] not in seen_species:
+            all_candidates.append({
+                'source': selected_mode,
+                **candidate
+            })
+            seen_species.add(candidate['english_name'])
+
+    for candidate in secondary_result['candidates'][:3]:
+        if (candidate['english_name'] not in seen_species and
+            candidate['adjusted_confidence'] > 3.0):  # 降低阈值，包含更多候选
+
+            other_mode = "快速模式" if selected_mode == "平衡模式" else "平衡模式"
+            all_candidates.append({
+                'source': f"{other_mode}(补充)",
+                **candidate
+            })
+            seen_species.add(candidate['english_name'])
+
+    # 智能排序：eBird GPS验证优先，然后按置信度
+    def smart_sort_key(candidate):
+        base_score = candidate['adjusted_confidence']
+
+        # eBird匹配巨大加权
+        if candidate['ebird_match']:
+            if candidate['ebird_boost'] == 1.5:  # GPS精确
+                base_score += 50  # GPS精确验证优先级最高
+            elif candidate['ebird_boost'] == 1.2:  # 国家级
+                base_score += 25  # 国家验证也有很高优先级
+
+        return base_score
+
+    # 按智能排序重新排列
+    all_candidates.sort(key=smart_sort_key, reverse=True)
+
+    # 生成最终结果
+    final_results = []
+    for i, candidate in enumerate(all_candidates[:5]):
+        final_results.append({
+            'rank': i + 1,
+            **candidate
+        })
+
+    return {
+        'selected_mode': selected_mode,
+        'selection_reason': reason,
+        'balanced_result': balanced_result,
+        'fast_result': fast_result,
+        'final_results': final_results,
+        'total_time': balanced_result['inference_time'] + fast_result['inference_time']
+    }
+
+def main():
+    """主函数"""
+    print("🐦 SuperBirdID - 双模式智能组合版")
+    print("=" * 60)
+    print("🧠 智能组合平衡模式和快速模式，自动选择最佳结果")
+    print("🌍 自动启用eBird GPS过滤，提升识别准确性")
+    print("=" * 60)
+
+    image_path = input("\n📸 请输入图片文件的完整路径: ").strip().strip("'\"")
+
+    try:
+        # 加载图像
+        original_image = load_image(image_path)
+        print(f"✓ 图像加载成功，尺寸: {original_image.size}")
+
+        # GPS检测
+        print("\n🌍 正在检测GPS位置信息...")
+        latitude, longitude, gps_info = extract_gps_from_exif(image_path)
+
+        if latitude is not None and longitude is not None:
+            auto_region, auto_country, region_info = get_region_from_gps(latitude, longitude)
+            print(f"✓ {region_info}")
+        else:
+            print(f"⚠ {gps_info}")
+            auto_region, auto_country = None, None
+
+        # YOLO检测
+        width, height = original_image.size
+        max_dimension = max(width, height)
+
+        if max_dimension > 640 and YOLO_AVAILABLE:
+            print(f"\n🔍 检测到大尺寸图像({max_dimension}px)，正在进行鸟类检测...")
+            detector = YOLOBirdDetector()
+            cropped_image, detection_msg = detector.detect_and_crop_bird(image_path)
+
+            if cropped_image is not None:
+                original_image = cropped_image
+                print(f"✓ YOLO检测成功")
+            else:
+                print(f"⚠ YOLO检测未找到明显鸟类，使用原始图像")
+
+        # eBird GPS过滤
+        ebird_species_set = None
+        use_gps_precise = False
+        db_manager = lazy_load_database()
+
+        if auto_country and EBIRD_FILTER_AVAILABLE:
+            print(f"\n🌍 正在获取{auto_country}地区的eBird数据...")
+            try:
+                EBIRD_API_KEY = "60nan25sogpo"
+                country_filter = eBirdCountryFilter(EBIRD_API_KEY, offline_dir="offline_ebird_data")
+
+                if latitude is not None and longitude is not None:
+                    print("使用GPS精确位置查询...")
+                    ebird_species_set = country_filter.get_location_species_list(latitude, longitude, 25)
+                    use_gps_precise = True
+                    filter_type = "GPS精确过滤"
+                else:
+                    ebird_species_set = country_filter.get_country_species_list(auto_country)
+                    filter_type = "国家级过滤"
+
+                if ebird_species_set:
+                    print(f"✓ 成功获取 {len(ebird_species_set)} 个物种的eBird数据 ({filter_type})")
+                else:
+                    print("⚠ eBird数据获取失败")
+            except Exception as e:
+                print(f"⚠ eBird过滤器初始化失败: {e}")
+
+        # 运行双模式智能识别
+        print(f"\n{'='*60}")
+        result = intelligent_dual_mode_recognition(
+            original_image, ebird_species_set, use_gps_precise, db_manager
+        )
+
+        # 显示最终结果
+        print(f"\n🎯 最终识别结果:")
+        print(f"选择策略: {result['selected_mode']} ({result['selection_reason']})")
+        print(f"总处理时间: {result['total_time']:.3f}秒")
+
+        if ebird_species_set:
+            filter_info = "GPS精确过滤" if use_gps_precise else f"{auto_country}国家过滤"
+            print(f"eBird过滤: {filter_info} ({len(ebird_species_set)}个物种)")
+
+        print(f"\n识别结果:")
+
+        if result['final_results']:
+            for res in result['final_results']:
+                ebird_indicator = "🌍" if res['ebird_match'] else ""
+                print(f"  {res['rank']}. {res['name']} - {res['adjusted_confidence']:.2f}% "
+                      f"[{res['source']}] {ebird_indicator}{res['display_info']}")
+        else:
+            print("  无法识别 (所有结果置信度过低)")
+
+        # 显示详细对比（可选）
+        show_details = input(f"\n📊 是否显示详细的双模式对比? (y/n): ").strip().lower()
+        if show_details == 'y':
+            print(f"\n{'='*40} 详细对比 {'='*40}")
+
+            print(f"\n📊 平衡模式详情:")
+            print(f"  预处理: {result['balanced_result']['method_desc']}")
+            print(f"  推理时间: {result['balanced_result']['inference_time']:.3f}秒")
+            print(f"  最高置信度: {result['balanced_result']['max_confidence']:.2f}%")
+            print(f"  候选结果数: {result['balanced_result']['total_candidates']}")
+
+            print(f"\n🚀 快速模式详情:")
+            print(f"  预处理: {result['fast_result']['method_desc']}")
+            print(f"  推理时间: {result['fast_result']['inference_time']:.3f}秒")
+            print(f"  最高置信度: {result['fast_result']['max_confidence']:.2f}%")
+            print(f"  候选结果数: {result['fast_result']['total_candidates']}")
+
+        print(f"\n{'='*60}")
+        print("🎉 双模式智能识别完成!")
+
+    except Exception as e:
+        print(f"❌ 发生错误: {e}")
+        import traceback
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 模型文件
+*.pt
+*.pth
+*.onnx
+*.h5
+*.pb
+
+# 数据文件
+*.sqlite
+*.db
+offline_ebird_data/
+
+# 临时文件
+*.tmp
+*.temp
+*.log
+*.bak
+*~
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 图片测试文件
+test_*.jpg
+test_*.png
+cropped_*.jpg
+thumb.jpg
