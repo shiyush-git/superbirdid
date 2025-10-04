@@ -20,11 +20,13 @@ try:
 except ImportError:
     DRAG_DROP_AVAILABLE = False
 
+
 # 导入核心识别模块
 from SuperBirdId import (
     load_image, lazy_load_classifier, lazy_load_bird_info,
     lazy_load_database, extract_gps_from_exif, get_region_from_gps,
-    write_bird_name_to_exif,
+    write_bird_name_to_exif, get_bird_description_from_db,
+    write_bird_caption_to_exif,
     YOLOBirdDetector, YOLO_AVAILABLE, EBIRD_FILTER_AVAILABLE,
     RAW_SUPPORT, script_dir
 )
@@ -766,6 +768,16 @@ class SuperBirdIDGUI:
         card.bind('<Enter>', enter_handler)
         card.bind('<Leave>', leave_handler)
 
+        # 添加点击事件 - 显示鸟种详细信息
+        def on_card_click(e):
+            self.show_bird_detail_dialog(cn_name)
+
+        # 绑定点击事件到卡片和所有子组件
+        for widget in [card, content, header, names_frame, conf_container, conf_header,
+                      cn_label, en_label, conf_text, conf_value, medal_label, rank_badge]:
+            widget.bind('<Button-1>', on_card_click)
+            widget.configure(cursor='hand2')  # 显示手型光标
+
         # 返回卡片对象以便响应式布局使用
         return card
 
@@ -1484,6 +1496,168 @@ class SuperBirdIDGUI:
     def update_status(self, text):
         """更新状态栏"""
         self.status_label.config(text=text)
+
+    def show_bird_detail_dialog(self, bird_cn_name):
+        """显示鸟种详细信息对话框"""
+        # 从数据库读取鸟种信息
+        bird_info = get_bird_description_from_db(bird_cn_name)
+
+        if not bird_info:
+            messagebox.showinfo("信息", f"未找到 {bird_cn_name} 的详细信息")
+            return
+
+        # 创建对话框窗口
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"鸟种详情 - {bird_cn_name}")
+        dialog.geometry("700x600")
+        dialog.configure(bg=self.colors['bg'])
+
+        # 设置窗口居中
+        dialog.update_idletasks()
+        width = dialog.winfo_width()
+        height = dialog.winfo_height()
+        x = (dialog.winfo_screenwidth() // 2) - (width // 2)
+        y = (dialog.winfo_screenheight() // 2) - (height // 2)
+        dialog.geometry(f'{width}x{height}+{x}+{y}')
+
+        # 主容器
+        main_frame = tk.Frame(dialog, bg=self.colors['bg'])
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # 标题区域
+        title_frame = tk.Frame(main_frame, bg=self.colors['card'], relief='solid', bd=1)
+        title_frame.pack(fill=tk.X, pady=(0, 15))
+
+        title_container = tk.Frame(title_frame, bg=self.colors['card'])
+        title_container.pack(padx=20, pady=15)
+
+        # 中文名
+        cn_label = tk.Label(title_container,
+                           text=bird_info['cn_name'],
+                           font=tkfont.Font(family='SF Pro Display', size=24, weight='bold'),
+                           fg=self.colors['text'],
+                           bg=self.colors['card'])
+        cn_label.pack()
+
+        # 英文名
+        en_label = tk.Label(title_container,
+                           text=bird_info['en_name'],
+                           font=tkfont.Font(family='SF Pro Text', size=14, slant='italic'),
+                           fg=self.colors['text_secondary'],
+                           bg=self.colors['card'])
+        en_label.pack(pady=(5, 0))
+
+        # 学名
+        sci_label = tk.Label(title_container,
+                            text=bird_info['scientific_name'],
+                            font=tkfont.Font(family='SF Pro Text', size=12),
+                            fg=self.colors['text_secondary'],
+                            bg=self.colors['card'])
+        sci_label.pack(pady=(5, 0))
+
+        # 滚动文本区域 - 显示详细描述
+        text_frame = tk.Frame(main_frame, bg=self.colors['card'])
+        text_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+
+        # 创建滚动条
+        scrollbar = tk.Scrollbar(text_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        # 创建文本框
+        text_widget = tk.Text(text_frame,
+                             wrap=tk.WORD,
+                             font=tkfont.Font(family='SF Pro Text', size=13),
+                             bg=self.colors['card'],
+                             fg=self.colors['text'],
+                             relief='flat',
+                             padx=15,
+                             pady=15,
+                             yscrollcommand=scrollbar.set)
+        text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=text_widget.yview)
+
+        # 插入简短描述
+        if bird_info['short_description']:
+            text_widget.insert(tk.END, "【简介】\n", "heading")
+            text_widget.insert(tk.END, bird_info['short_description'] + "\n\n")
+
+        # 插入详细描述
+        if bird_info['full_description']:
+            text_widget.insert(tk.END, "【详细信息】\n", "heading")
+            text_widget.insert(tk.END, bird_info['full_description'])
+
+        # 配置标题样式
+        text_widget.tag_config("heading",
+                              font=tkfont.Font(family='SF Pro Display', size=15, weight='bold'),
+                              foreground=self.colors['accent'])
+
+        # 禁止编辑
+        text_widget.config(state=tk.DISABLED)
+
+        # 按钮区域
+        button_frame = tk.Frame(main_frame, bg=self.colors['bg'])
+        button_frame.pack(fill=tk.X)
+
+        # 写入Caption按钮
+        write_btn = tk.Button(button_frame,
+                             text="📝 写入到EXIF Caption",
+                             font=self.fonts['button'],
+                             bg='#ffffff',
+                             fg='#000000',
+                             activebackground='#e0e0e0',
+                             activeforeground='#000000',
+                             relief='solid',
+                             bd=2,
+                             padx=20,
+                             pady=10,
+                             cursor='hand2',
+                             command=lambda: self.write_caption_and_close(
+                                 bird_info['short_description'] or bird_info['full_description'][:200],
+                                 dialog
+                             ))
+        write_btn.pack(side=tk.LEFT, padx=(0, 10))
+
+        # 关闭按钮
+        close_btn = tk.Button(button_frame,
+                             text="关闭",
+                             font=self.fonts['button'],
+                             bg='#ffffff',
+                             fg='#000000',
+                             activebackground='#e0e0e0',
+                             activeforeground='#000000',
+                             relief='solid',
+                             bd=2,
+                             padx=20,
+                             pady=10,
+                             cursor='hand2',
+                             command=dialog.destroy)
+        close_btn.pack(side=tk.RIGHT)
+
+        # 悬停效果
+        def add_hover_effect(button):
+            def on_enter(e):
+                button.configure(bg='#e0e0e0')
+            def on_leave(e):
+                button.configure(bg='#ffffff')
+            button.bind('<Enter>', on_enter)
+            button.bind('<Leave>', on_leave)
+
+        add_hover_effect(write_btn)
+        add_hover_effect(close_btn)
+
+    def write_caption_and_close(self, caption_text, dialog):
+        """写入Caption到EXIF并关闭对话框"""
+        if not self.current_image_path:
+            messagebox.showwarning("警告", "当前没有打开的图片")
+            return
+
+        success, message = write_bird_caption_to_exif(self.current_image_path, caption_text)
+
+        if success:
+            messagebox.showinfo("成功", message)
+            dialog.destroy()
+        else:
+            messagebox.showwarning("失败", message)
 
     def on_closing(self):
         """关闭窗口时的清理操作"""

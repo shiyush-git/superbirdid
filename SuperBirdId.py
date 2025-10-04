@@ -424,6 +424,119 @@ def write_bird_name_to_exif(image_path, bird_name):
     except Exception as e:
         return False, f"写入EXIF失败: {e}"
 
+def get_bird_description_from_db(bird_cn_name):
+    """
+    从数据库中读取鸟种的详细中文介绍
+
+    Args:
+        bird_cn_name: 鸟种中文名
+
+    Returns:
+        dict: {
+            'cn_name': str,
+            'en_name': str,
+            'scientific_name': str,
+            'short_description': str,
+            'full_description': str,
+            'ebird_code': str
+        } 或 None（如果未找到）
+    """
+    import sqlite3
+
+    try:
+        # 连接数据库
+        db_path = os.path.join(script_dir, 'bird_reference.sqlite')
+        if not os.path.exists(db_path):
+            return None
+
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+
+        # 查询鸟种信息
+        cursor.execute("""
+            SELECT
+                chinese_simplified,
+                english_name,
+                scientific_name,
+                short_description_zh,
+                full_description_zh,
+                ebird_code
+            FROM BirdCountInfo
+            WHERE chinese_simplified = ?
+            LIMIT 1
+        """, (bird_cn_name,))
+
+        row = cursor.fetchone()
+        conn.close()
+
+        if row:
+            return {
+                'cn_name': row[0],
+                'en_name': row[1],
+                'scientific_name': row[2],
+                'short_description': row[3] or '',
+                'full_description': row[4] or '',
+                'ebird_code': row[5] or ''
+            }
+        else:
+            return None
+
+    except Exception as e:
+        print(f"读取鸟种信息失败: {e}")
+        return None
+
+def write_bird_caption_to_exif(image_path, caption_text):
+    """
+    将鸟种描述写入图片EXIF的Caption字段
+    仅支持JPEG和RAW格式
+
+    Args:
+        image_path: 图片路径
+        caption_text: 描述文本
+
+    Returns:
+        (success: bool, message: str)
+    """
+    # 检查文件是否存在
+    if not os.path.exists(image_path):
+        return False, f"文件不存在: {image_path}"
+
+    # 获取文件扩展名
+    file_ext = os.path.splitext(image_path)[1].lower()
+
+    # 支持的格式列表
+    supported_formats = [
+        '.jpg', '.jpeg', '.jpe', '.jfif',  # JPEG
+        '.cr2', '.cr3', '.nef', '.nrw', '.arw', '.srf', '.dng',
+        '.raf', '.orf', '.rw2', '.pef', '.srw', '.raw', '.rwl',
+    ]
+
+    # 跳过不支持的格式
+    if file_ext not in supported_formats:
+        return False, f"跳过格式 {file_ext}（仅支持JPEG和RAW格式）"
+
+    # 必须使用ExifTool才能写入
+    if not EXIFTOOL_AVAILABLE:
+        return False, "ExifTool不可用，无法写入EXIF"
+
+    try:
+        with exiftool.ExifToolHelper() as et:
+            # 写入Caption字段
+            et.set_tags(
+                image_path,
+                tags={
+                    "EXIF:ImageDescription": caption_text,
+                    "XMP:Description": caption_text,
+                    "IPTC:Caption-Abstract": caption_text,
+                },
+                params=["-overwrite_original"]
+            )
+
+        return True, f"✓ 已写入EXIF Caption"
+
+    except Exception as e:
+        return False, f"写入EXIF Caption失败: {e}"
+
 def load_image(image_path):
     """
     增强的图像加载函数 - 支持标准格式和RAW格式
