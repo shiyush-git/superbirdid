@@ -11,14 +11,14 @@ SuperBirdID API 提供了HTTP REST API接口，允许外部程序（如Adobe Lig
 ### 1. 启动API服务器
 
 ```bash
-# 基本启动（监听 127.0.0.1:5000）
+# 基本启动（监听 127.0.0.1:5156）
 python SuperBirdID_API.py
 
 # 自定义端口
 python SuperBirdID_API.py --port 8000
 
 # 允许外部访问
-python SuperBirdID_API.py --host 0.0.0.0 --port 5000
+python SuperBirdID_API.py --host 0.0.0.0 --port 5156
 
 # 调试模式
 python SuperBirdID_API.py --debug
@@ -27,7 +27,7 @@ python SuperBirdID_API.py --debug
 ### 2. 验证服务器状态
 
 ```bash
-curl http://127.0.0.1:5000/health
+curl http://127.0.0.1:5156/health
 ```
 
 返回示例:
@@ -113,14 +113,14 @@ curl http://127.0.0.1:5000/health
 
 ```bash
 # 使用curl
-curl -X POST http://127.0.0.1:5000/recognize \
+curl -X POST http://127.0.0.1:5156/recognize \
   -H "Content-Type: application/json" \
   -d '{"image_path": "/path/to/bird.jpg", "top_k": 3}'
 
 # 使用Python requests
 import requests
 response = requests.post(
-    "http://127.0.0.1:5000/recognize",
+    "http://127.0.0.1:5156/recognize",
     json={"image_path": "/path/to/bird.jpg", "top_k": 3}
 )
 print(response.json())
@@ -152,7 +152,7 @@ print(response.json())
 
 **示例**:
 ```bash
-curl "http://127.0.0.1:5000/bird/info?cn_name=白头鹎"
+curl "http://127.0.0.1:5156/bird/info?cn_name=白头鹎"
 ```
 
 ---
@@ -179,7 +179,7 @@ curl "http://127.0.0.1:5000/bird/info?cn_name=白头鹎"
 
 **示例**:
 ```bash
-curl -X POST http://127.0.0.1:5000/exif/write-title \
+curl -X POST http://127.0.0.1:5156/exif/write-title \
   -H "Content-Type: application/json" \
   -d '{"image_path": "/path/to/bird.jpg", "bird_name": "白头鹎"}'
 ```
@@ -220,7 +220,7 @@ local http = require("LrHttp")
 local json = require("json")
 
 function recognizeBird(imagePath)
-  local url = "http://127.0.0.1:5000/recognize"
+  local url = "http://127.0.0.1:5156/recognize"
   local body = json.encode({
     image_path = imagePath,
     top_k = 3
@@ -232,7 +232,7 @@ function recognizeBird(imagePath)
   if data.success then
     local topResult = data.results[1]
     -- 写入EXIF Title
-    http.post("http://127.0.0.1:5000/exif/write-title",
+    http.post("http://127.0.0.1:5156/exif/write-title",
       json.encode({
         image_path = imagePath,
         bird_name = topResult.cn_name
@@ -252,7 +252,7 @@ import glob
 # 批量识别目录下所有图片
 for image_path in glob.glob("/path/to/photos/*.jpg"):
     response = requests.post(
-        "http://127.0.0.1:5000/recognize",
+        "http://127.0.0.1:5156/recognize",
         json={"image_path": image_path, "top_k": 1}
     )
 
@@ -263,7 +263,7 @@ for image_path in glob.glob("/path/to/photos/*.jpg"):
 
         # 自动写入EXIF
         requests.post(
-            "http://127.0.0.1:5000/exif/write-title",
+            "http://127.0.0.1:5156/exif/write-title",
             json={"image_path": image_path, "bird_name": bird_name}
         )
 ```
@@ -274,7 +274,7 @@ for image_path in glob.glob("/path/to/photos/*.jpg"):
 const axios = require('axios');
 
 async function recognizeBird(imagePath) {
-  const response = await axios.post('http://127.0.0.1:5000/recognize', {
+  const response = await axios.post('http://127.0.0.1:5156/recognize', {
     image_path: imagePath,
     top_k: 3
   });
@@ -297,7 +297,7 @@ recognizeBird('/path/to/bird.jpg');
 # 识别鸟类
 IMAGE_PATH="/path/to/bird.jpg"
 
-RESULT=$(curl -s -X POST http://127.0.0.1:5000/recognize \
+RESULT=$(curl -s -X POST http://127.0.0.1:5156/recognize \
   -H "Content-Type: application/json" \
   -d "{\"image_path\": \"$IMAGE_PATH\", \"top_k\": 1}")
 
@@ -307,7 +307,7 @@ BIRD_NAME=$(echo $RESULT | jq -r '.results[0].cn_name')
 echo "识别结果: $BIRD_NAME"
 
 # 写入EXIF
-curl -X POST http://127.0.0.1:5000/exif/write-title \
+curl -X POST http://127.0.0.1:5156/exif/write-title \
   -H "Content-Type: application/json" \
   -d "{\"image_path\": \"$IMAGE_PATH\", \"bird_name\": \"$BIRD_NAME\"}"
 ```
@@ -341,23 +341,23 @@ python api_client_example.py /path/to/bird.jpg
 
 ```bash
 # 仅本机访问
-python SuperBirdID_API.py --host 127.0.0.1 --port 5000
+python SuperBirdID_API.py --host 127.0.0.1 --port 5156
 ```
 
 ### 2. 局域网访问
 
 ```bash
 # 允许局域网内其他设备访问
-python SuperBirdID_API.py --host 0.0.0.0 --port 5000
+python SuperBirdID_API.py --host 0.0.0.0 --port 5156
 ```
 
-其他设备访问地址：`http://<你的IP>:5000`
+其他设备访问地址：`http://<你的IP>:5156`
 
 ### 3. 后台运行（macOS/Linux）
 
 ```bash
 # 使用nohup在后台运行
-nohup python SuperBirdID_API.py --host 127.0.0.1 --port 5000 > api.log 2>&1 &
+nohup python SuperBirdID_API.py --host 127.0.0.1 --port 5156 > api.log 2>&1 &
 
 # 查看日志
 tail -f api.log
@@ -379,7 +379,7 @@ After=network.target
 Type=simple
 User=your_username
 WorkingDirectory=/path/to/SuperBirdID
-ExecStart=/usr/bin/python3 SuperBirdID_API.py --host 127.0.0.1 --port 5000
+ExecStart=/usr/bin/python3 SuperBirdID_API.py --host 127.0.0.1 --port 5156
 Restart=always
 
 [Install]
@@ -500,7 +500,7 @@ ls *.pt  # 检查模型文件
 ```python
 import requests
 
-API_URL = "http://127.0.0.1:5000"
+API_URL = "http://127.0.0.1:5156"
 
 # 1. 识别鸟类
 response = requests.post(f"{API_URL}/recognize", json={
