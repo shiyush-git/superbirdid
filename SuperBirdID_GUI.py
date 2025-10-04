@@ -157,16 +157,37 @@ class SuperBirdIDGUI:
             except:
                 pass
 
-        # 绑定剪贴板粘贴快捷键
-        self.root.bind_all('<Control-v>', lambda e: self.paste_from_clipboard())  # Windows/Linux
-        self.root.bind_all('<Command-v>', lambda e: self.paste_from_clipboard())  # macOS
-        # macOS 使用 Cmd，在 tkinter 中是 Mod1 或 Command
-        import platform
-        if platform.system() == 'Darwin':  # macOS
-            self.root.bind_all('<Mod1-v>', lambda e: self.paste_from_clipboard())
+        # 绑定键盘快捷键
+        self._setup_keyboard_shortcuts()
 
         # 启动进度检查
         self.check_progress()
+
+        # 注册清理函数
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+    def _setup_keyboard_shortcuts(self):
+        """设置键盘快捷键"""
+        import platform
+        is_macos = platform.system() == 'Darwin'
+
+        # Ctrl+V / Cmd+V - 粘贴
+        self.root.bind_all('<Control-v>', lambda e: self.paste_from_clipboard())
+        if is_macos:
+            self.root.bind_all('<Command-v>', lambda e: self.paste_from_clipboard())
+            self.root.bind_all('<Mod1-v>', lambda e: self.paste_from_clipboard())
+
+        # Ctrl+O / Cmd+O - 打开文件
+        self.root.bind_all('<Control-o>', lambda e: self.open_image())
+        if is_macos:
+            self.root.bind_all('<Command-o>', lambda e: self.open_image())
+
+        # Return/Enter - 开始识别
+        self.root.bind('<Return>', lambda e: self.start_recognition() if self.current_image_path and not self.is_processing else None)
+        self.root.bind('<KP_Enter>', lambda e: self.start_recognition() if self.current_image_path and not self.is_processing else None)
+
+        # Escape - 切换高级选项
+        self.root.bind('<Escape>', lambda e: self.toggle_advanced())
 
     def load_available_countries(self):
         """加载可用的国家列表"""
@@ -248,7 +269,7 @@ class SuperBirdIDGUI:
                         # 是文件路径，直接加载
                         self.load_image(clipboard_text)
                         return
-                except:
+                except (tk.TclError, OSError):
                     pass
 
                 messagebox.showinfo("提示", "剪贴板中没有图片\n\n请先复制图片后再粘贴")
@@ -256,10 +277,21 @@ class SuperBirdIDGUI:
 
             # 如果是图片，保存到临时文件
             import tempfile
+
+            # 清理之前的临时文件（如果存在）
+            if hasattr(self, '_temp_clipboard_file') and os.path.exists(self._temp_clipboard_file):
+                try:
+                    os.unlink(self._temp_clipboard_file)
+                except OSError:
+                    pass
+
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
             temp_path = temp_file.name
             clipboard_image.save(temp_path, 'PNG')
             temp_file.close()
+
+            # 保存临时文件路径用于后续清理
+            self._temp_clipboard_file = temp_path
 
             # 加载临时图片
             self.current_image_path = temp_path
@@ -283,6 +315,8 @@ class SuperBirdIDGUI:
 
         except ImportError:
             messagebox.showerror("错误", "PIL.ImageGrab 模块不可用\n无法使用剪贴板功能")
+        except OSError as e:
+            messagebox.showerror("错误", f"保存临时文件失败:\n{e}")
         except Exception as e:
             messagebox.showerror("错误", f"粘贴失败:\n{e}")
 
@@ -540,32 +574,31 @@ class SuperBirdIDGUI:
                                    relief='solid',
                                    highlightbackground='#333333')
 
-        # 悬停效果 - 白色按钮变浅灰
-        def on_enter_primary(e):
-            self.recognize_btn.configure(bg='#e0e0e0', highlightbackground='#666666')
+        # 悬停效果 - 统一的按钮悬停处理函数
+        def create_button_hover_handlers(button, is_primary=False):
+            """创建按钮悬停效果处理器"""
+            def on_enter(e):
+                button.configure(bg='#e0e0e0', highlightbackground='#666666')
 
-        def on_leave_primary(e):
-            if not self.is_processing:
-                self.recognize_btn.configure(bg='#ffffff', highlightbackground='#333333')
+            def on_leave(e):
+                # 主按钮在处理中时不恢复
+                if is_primary and self.is_processing:
+                    return
+                button.configure(bg='#ffffff', highlightbackground='#333333')
 
-        def on_enter_open(e):
-            self.open_btn.configure(bg='#e0e0e0', highlightbackground='#666666')
+            return on_enter, on_leave
 
-        def on_leave_open(e):
-            self.open_btn.configure(bg='#ffffff', highlightbackground='#333333')
+        # 绑定悬停效果
+        enter_primary, leave_primary = create_button_hover_handlers(self.recognize_btn, is_primary=True)
+        enter_open, leave_open = create_button_hover_handlers(self.open_btn)
+        enter_adv, leave_adv = create_button_hover_handlers(self.advanced_btn)
 
-        def on_enter_advanced(e):
-            self.advanced_btn.configure(bg='#e0e0e0', highlightbackground='#666666')
-
-        def on_leave_advanced(e):
-            self.advanced_btn.configure(bg='#ffffff', highlightbackground='#333333')
-
-        self.recognize_btn.bind('<Enter>', on_enter_primary)
-        self.recognize_btn.bind('<Leave>', on_leave_primary)
-        self.open_btn.bind('<Enter>', on_enter_open)
-        self.open_btn.bind('<Leave>', on_leave_open)
-        self.advanced_btn.bind('<Enter>', on_enter_advanced)
-        self.advanced_btn.bind('<Leave>', on_leave_advanced)
+        self.recognize_btn.bind('<Enter>', enter_primary)
+        self.recognize_btn.bind('<Leave>', leave_primary)
+        self.open_btn.bind('<Enter>', enter_open)
+        self.open_btn.bind('<Leave>', leave_open)
+        self.advanced_btn.bind('<Enter>', enter_adv)
+        self.advanced_btn.bind('<Leave>', leave_adv)
 
     def create_results_area(self, parent):
         """创建结果展示区域 - 优化的卡片式布局（横排三个一行）"""
@@ -709,36 +742,28 @@ class SuperBirdIDGUI:
         bar_fg = tk.Frame(bar_container, bg=accent_color, height=12)
         bar_fg.place(relx=0, rely=0, relwidth=bar_width_percent, relheight=1)
 
-        # 添加悬停效果 - 暗色主题
-        def on_enter(e):
-            card.configure(bg=self.colors['card_hover'], highlightbackground=accent_color,
-                          highlightthickness=2)
-            content.configure(bg=self.colors['card_hover'])
-            header.configure(bg=self.colors['card_hover'])
-            names_frame.configure(bg=self.colors['card_hover'])
-            conf_container.configure(bg=self.colors['card_hover'])
-            conf_header.configure(bg=self.colors['card_hover'])
-            cn_label.configure(bg=self.colors['card_hover'])
-            en_label.configure(bg=self.colors['card_hover'])
-            conf_text.configure(bg=self.colors['card_hover'])
-            conf_value.configure(bg=self.colors['card_hover'])
-            medal_label.configure(bg=self.colors['card_hover'])
+        # 添加悬停效果 - 暗色主题（优化版）
+        def create_card_hover_effect():
+            """创建卡片悬停效果"""
+            widgets = [content, header, names_frame, conf_container, conf_header,
+                      cn_label, en_label, conf_text, conf_value, medal_label]
 
-        def on_leave(e):
-            card.configure(bg=self.colors['card'], highlightthickness=0)
-            content.configure(bg=self.colors['card'])
-            header.configure(bg=self.colors['card'])
-            names_frame.configure(bg=self.colors['card'])
-            conf_container.configure(bg=self.colors['card'])
-            conf_header.configure(bg=self.colors['card'])
-            cn_label.configure(bg=self.colors['card'])
-            en_label.configure(bg=self.colors['card'])
-            conf_text.configure(bg=self.colors['card'])
-            conf_value.configure(bg=self.colors['card'])
-            medal_label.configure(bg=self.colors['card'])
+            def on_enter(e):
+                card.configure(bg=self.colors['card_hover'], highlightbackground=accent_color,
+                              highlightthickness=2)
+                for widget in widgets:
+                    widget.configure(bg=self.colors['card_hover'])
 
-        card.bind('<Enter>', on_enter)
-        card.bind('<Leave>', on_leave)
+            def on_leave(e):
+                card.configure(bg=self.colors['card'], highlightthickness=0)
+                for widget in widgets:
+                    widget.configure(bg=self.colors['card'])
+
+            return on_enter, on_leave
+
+        enter_handler, leave_handler = create_card_hover_effect()
+        card.bind('<Enter>', enter_handler)
+        card.bind('<Leave>', leave_handler)
 
         # 返回卡片对象以便响应式布局使用
         return card
@@ -961,10 +986,22 @@ class SuperBirdIDGUI:
             if filepath.startswith('{') and filepath.endswith('}'):
                 filepath = filepath[1:-1]
 
+            # 验证文件存在
+            if not os.path.exists(filepath):
+                raise FileNotFoundError(f"文件不存在: {filepath}")
+
+            # 验证文件可读
+            if not os.access(filepath, os.R_OK):
+                raise PermissionError(f"无权限读取文件: {filepath}")
+
             self.current_image_path = filepath
 
             # 使用核心加载函数
             self.current_image = load_image(filepath)
+
+            # 验证图片加载成功
+            if self.current_image is None:
+                raise ValueError("图片加载失败，返回空对象")
 
             # 隐藏占位符，显示图片
             self.upload_placeholder.pack_forget()
@@ -980,40 +1017,60 @@ class SuperBirdIDGUI:
             info_text += f"{self.current_image.size[0]}x{self.current_image.size[1]} · "
             info_text += f"{file_ext[1:]} · {file_size:.2f} MB"
 
-            self.info_label.config(text=info_text, fg=self.colors['text_secondary'])  # 重置颜色
+            self.info_label.config(text=info_text, fg=self.colors['text_secondary'])
             self.update_status(f"✓ 已加载图片")
 
             # 清空之前的结果
             self.clear_results()
 
+        except FileNotFoundError as e:
+            messagebox.showerror("文件错误", str(e))
+        except PermissionError as e:
+            messagebox.showerror("权限错误", str(e))
+        except OSError as e:
+            messagebox.showerror("系统错误", f"读取文件失败:\n{e}")
         except Exception as e:
-            messagebox.showerror("错误", f"加载图片失败:\n{e}")
+            messagebox.showerror("错误", f"加载图片失败:\n{type(e).__name__}: {e}")
 
     def display_image(self, pil_image):
-        """在界面上显示图片 - 自适应窗口大小"""
-        # 获取容器实际可用空间
-        self.root.update_idletasks()  # 确保获取到正确的尺寸
-        container_width = self.image_container.winfo_width()
-        container_height = self.image_container.winfo_height()
+        """在界面上显示图片 - 自适应窗口大小（优化版）"""
+        try:
+            # 获取容器实际可用空间
+            self.root.update_idletasks()  # 确保获取到正确的尺寸
+            container_width = self.image_container.winfo_width()
+            container_height = self.image_container.winfo_height()
 
-        # 如果容器尺寸未初始化，使用窗口尺寸的百分比
-        if container_width <= 1:
-            container_width = int(self.root.winfo_width() * 0.7)
-        if container_height <= 1:
-            container_height = int(self.root.winfo_height() * 0.45)
+            # 如果容器尺寸未初始化，使用窗口尺寸的百分比
+            if container_width <= 1:
+                container_width = int(self.root.winfo_width() * 0.7)
+            if container_height <= 1:
+                container_height = int(self.root.winfo_height() * 0.45)
 
-        # 保持图片比例缩放
-        img_copy = pil_image.copy()
-        img_copy.thumbnail((container_width - 40, container_height - 40), Image.Resampling.LANCZOS)
+            # 保持图片比例缩放（使用更高效的方法）
+            img_copy = pil_image.copy()
+            img_copy.thumbnail((container_width - 40, container_height - 40), Image.Resampling.LANCZOS)
 
-        # 转换为PhotoImage
-        self.current_photo = ImageTk.PhotoImage(img_copy)
+            # 释放旧的PhotoImage引用
+            if hasattr(self, 'current_photo') and self.current_photo:
+                try:
+                    del self.current_photo
+                except Exception:
+                    pass
 
-        # 更新标签
-        self.image_label.config(image=self.current_photo,
-                               relief='solid',
-                               bd=2,
-                               borderwidth=2)
+            # 转换为PhotoImage
+            self.current_photo = ImageTk.PhotoImage(img_copy)
+
+            # 更新标签
+            self.image_label.config(image=self.current_photo,
+                                   relief='solid',
+                                   bd=2,
+                                   borderwidth=2)
+
+        except Exception as e:
+            # 如果显示失败，使用占位符
+            self.image_label.pack_forget()
+            self.upload_placeholder.pack(fill=tk.BOTH, expand=True)
+            raise ValueError(f"图片显示失败: {e}")
 
     def clear_results(self):
         """清空结果显示"""
@@ -1410,6 +1467,27 @@ class SuperBirdIDGUI:
     def update_status(self, text):
         """更新状态栏"""
         self.status_label.config(text=text)
+
+    def on_closing(self):
+        """关闭窗口时的清理操作"""
+        try:
+            # 清理临时剪贴板文件
+            if hasattr(self, '_temp_clipboard_file') and os.path.exists(self._temp_clipboard_file):
+                try:
+                    os.unlink(self._temp_clipboard_file)
+                except OSError:
+                    pass
+
+            # 如果正在处理，警告用户
+            if self.is_processing:
+                if messagebox.askokcancel("确认退出", "识别正在进行中，确定要退出吗？"):
+                    self.root.destroy()
+            else:
+                self.root.destroy()
+
+        except Exception:
+            # 即使清理失败也要退出
+            self.root.destroy()
 
 
 def main():
