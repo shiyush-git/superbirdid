@@ -8,6 +8,14 @@ import csv
 import os
 import sys
 
+# ExifTool支持（可选）
+try:
+    import exiftool
+    EXIFTOOL_AVAILABLE = True
+except ImportError:
+    EXIFTOOL_AVAILABLE = False
+    print("⚠️ PyExifTool未安装，使用PIL读取EXIF（功能受限）")
+
 # RAW格式支持
 try:
     import rawpy
@@ -251,9 +259,36 @@ def verify_files():
 # 启动时只进行文件验证
 verify_files()
 
-def extract_gps_from_exif(image_path):
+def extract_gps_from_exif_exiftool(image_path):
     """
-    从图像EXIF数据中提取GPS坐标
+    使用ExifTool从图像EXIF数据中提取GPS坐标（更强大、更可靠）
+    返回: (latitude, longitude, location_info) 或 (None, None, None)
+    """
+    try:
+        with exiftool.ExifToolHelper() as et:
+            metadata = et.get_metadata(image_path)
+
+            if not metadata or len(metadata) == 0:
+                return None, None, "无EXIF数据"
+
+            data = metadata[0]
+
+            # ExifTool提供已计算好的GPS坐标
+            lat = data.get('Composite:GPSLatitude')
+            lon = data.get('Composite:GPSLongitude')
+
+            if lat is not None and lon is not None:
+                location_info = f"GPS: {lat:.6f}, {lon:.6f} (ExifTool)"
+                return lat, lon, location_info
+            else:
+                return None, None, "无GPS数据"
+
+    except Exception as e:
+        return None, None, f"ExifTool GPS解析失败: {e}"
+
+def extract_gps_from_exif_pil(image_path):
+    """
+    使用PIL从图像EXIF数据中提取GPS坐标（Fallback方案）
     返回: (latitude, longitude, location_info) 或 (None, None, None)
     """
     try:
@@ -310,7 +345,24 @@ def extract_gps_from_exif(image_path):
             return None, None, "GPS坐标不完整"
 
     except Exception as e:
-        return None, None, f"GPS解析失败: {e}"
+        return None, None, f"PIL GPS解析失败: {e}"
+
+def extract_gps_from_exif(image_path):
+    """
+    从图像EXIF数据中提取GPS坐标（智能选择最佳方法）
+    优先使用ExifTool，失败则fallback到PIL
+    返回: (latitude, longitude, location_info) 或 (None, None, None)
+    """
+    # 优先使用ExifTool（如果可用）
+    if EXIFTOOL_AVAILABLE:
+        lat, lon, info = extract_gps_from_exif_exiftool(image_path)
+        if lat is not None and lon is not None:
+            return lat, lon, info
+        # ExifTool失败，尝试PIL fallback
+        # print(f"ExifTool读取失败({info})，尝试PIL...")
+
+    # 使用PIL fallback
+    return extract_gps_from_exif_pil(image_path)
 
 def load_image(image_path):
     """
