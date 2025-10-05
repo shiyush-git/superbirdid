@@ -454,7 +454,7 @@ class SuperBirdIDGUI:
         icon_bg.pack()
         icon_bg.pack_propagate(False)
 
-        icon = tk.Label(icon_bg, text="📸",
+        icon = tk.Label(icon_bg, text="+",
                        font=tkfont.Font(size=56),
                        bg=self.colors['bg_secondary'])
         icon.place(relx=0.5, rely=0.5, anchor='center')
@@ -520,7 +520,7 @@ class SuperBirdIDGUI:
                                    font=self.fonts['small'],
                                    fg=self.colors['text_secondary'],
                                    bg=self.colors['card'])
-        self.info_label.pack(pady=(0, 20))
+        self.info_label.pack(pady=(0, 10))
 
     def create_action_buttons(self, parent):
         """创建操作按钮"""
@@ -537,7 +537,7 @@ class SuperBirdIDGUI:
                                   activeforeground='#000000',
                                   relief='solid',
                                   bd=2,
-                                  padx=30, pady=15,
+                                  padx=15, pady=15,
                                   cursor='hand2',
                                   command=self.open_image)
         self.open_btn.pack(side=tk.LEFT, padx=10)

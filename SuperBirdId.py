@@ -186,14 +186,98 @@ bird_info = None
 endemic_info = None
 labelmap_data = None
 
+def decrypt_model(encrypted_path: str, password: str) -> bytes:
+    """解密模型文件并返回解密后的数据"""
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    from cryptography.hazmat.backends import default_backend
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+    # 读取加密文件
+    with open(encrypted_path, 'rb') as f:
+        encrypted_data = f.read()
+
+    # 提取 salt, iv, ciphertext
+    salt = encrypted_data[:16]
+    iv = encrypted_data[16:32]
+    ciphertext = encrypted_data[32:]
+
+    # 派生密钥
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+        backend=default_backend()
+    )
+    key = kdf.derive(password.encode())
+
+    # 解密
+    cipher = Cipher(
+        algorithms.AES(key),
+        modes.CBC(iv),
+        backend=default_backend()
+    )
+    decryptor = cipher.decryptor()
+    plaintext_padded = decryptor.update(ciphertext) + decryptor.finalize()
+
+    # 移除填充
+    padding_length = plaintext_padded[-1]
+    plaintext = plaintext_padded[:-padding_length]
+
+    return plaintext
+
 def lazy_load_classifier():
-    """懒加载 PyTorch 分类模型"""
+    """懒加载 PyTorch 分类模型（支持加密模型）"""
     global classifier
     if classifier is None:
         print("正在加载AI模型...")
-        classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
-        classifier.eval()
-        print("✓ PyTorch分类模型加载完成")
+
+        # 固定密码（与加密工具相同）
+        SECRET_PASSWORD = "SuperBirdID_2024_AI_Model_Encryption_Key_v1"
+
+        # 检查是否存在加密模型
+        encrypted_model_path = PYTORCH_CLASSIFICATION_MODEL_PATH + '.enc'
+
+        if os.path.exists(encrypted_model_path):
+            # 加载加密模型
+            print("检测到加密模型，正在解密...")
+            try:
+                model_data = decrypt_model(encrypted_model_path, SECRET_PASSWORD)
+
+                # 将解密的数据写入临时文件
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pt') as tmp_file:
+                    tmp_file.write(model_data)
+                    tmp_model_path = tmp_file.name
+
+                # 加载临时模型文件
+                classifier = torch.jit.load(tmp_model_path)
+                classifier.eval()
+
+                # 删除临时文件
+                try:
+                    os.unlink(tmp_model_path)
+                except:
+                    pass
+
+                print("✓ 加密模型加载完成")
+            except Exception as e:
+                print(f"❌ 加密模型加载失败: {e}")
+                # 回退到未加密模型
+                if os.path.exists(PYTORCH_CLASSIFICATION_MODEL_PATH):
+                    print("尝试加载未加密模型...")
+                    classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
+                    classifier.eval()
+                    print("✓ PyTorch分类模型加载完成")
+                else:
+                    raise RuntimeError("无法加载模型：加密模型解密失败且未找到未加密模型")
+        else:
+            # 加载未加密模型
+            classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
+            classifier.eval()
+            print("✓ PyTorch分类模型加载完成")
+
     return classifier
 
 def lazy_load_bird_info():
@@ -261,14 +345,23 @@ def verify_files():
 
     missing_files = []
     for file_path in required_files:
-        if not os.path.exists(file_path):
-            missing_files.append(os.path.basename(file_path))
+        # 对于模型文件，检查是否存在加密版本
+        if file_path == PYTORCH_CLASSIFICATION_MODEL_PATH:
+            if not os.path.exists(file_path) and not os.path.exists(file_path + '.enc'):
+                missing_files.append(os.path.basename(file_path) + ' (或 .enc)')
+        else:
+            if not os.path.exists(file_path):
+                missing_files.append(os.path.basename(file_path))
 
     if missing_files:
         print(f"✗ 缺少必要文件: {', '.join(missing_files)}")
         sys.exit(1)
     else:
-        print("✓ 文件完整性检查通过")
+        # 检查是否使用加密模型
+        if os.path.exists(PYTORCH_CLASSIFICATION_MODEL_PATH + '.enc'):
+            print("✓ 文件完整性检查通过 (使用加密模型)")
+        else:
+            print("✓ 文件完整性检查通过")
 
 # 启动时只进行文件验证
 verify_files()
