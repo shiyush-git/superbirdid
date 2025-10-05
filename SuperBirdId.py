@@ -12,8 +12,22 @@ import sys
 try:
     import exiftool
     EXIFTOOL_AVAILABLE = True
+
+    # 配置exiftool二进制路径（支持打包环境）
+    if getattr(sys, 'frozen', False):
+        # 打包后的环境（PyInstaller）
+        base_path = sys._MEIPASS
+        EXIFTOOL_PATH = os.path.join(base_path, 'exiftool', 'exiftool')
+        # 设置可执行权限
+        if os.path.exists(EXIFTOOL_PATH):
+            os.chmod(EXIFTOOL_PATH, 0o755)
+    else:
+        # 开发环境，使用系统exiftool
+        EXIFTOOL_PATH = 'exiftool'
+
 except ImportError:
     EXIFTOOL_AVAILABLE = False
+    EXIFTOOL_PATH = None
     print("⚠️ PyExifTool未安装，使用PIL读取EXIF（功能受限）")
 
 # RAW格式支持
@@ -265,7 +279,7 @@ def extract_gps_from_exif_exiftool(image_path):
     返回: (latitude, longitude, location_info) 或 (None, None, None)
     """
     try:
-        with exiftool.ExifToolHelper() as et:
+        with exiftool.ExifToolHelper(executable=EXIFTOOL_PATH) as et:
             metadata = et.get_metadata(image_path)
 
             if not metadata or len(metadata) == 0:
@@ -408,7 +422,7 @@ def write_bird_name_to_exif(image_path, bird_name):
         return False, "ExifTool不可用，无法写入EXIF"
 
     try:
-        with exiftool.ExifToolHelper() as et:
+        with exiftool.ExifToolHelper(executable=EXIFTOOL_PATH) as et:
             # 写入Title字段（EXIF:ImageDescription）
             et.set_tags(
                 image_path,
@@ -520,7 +534,7 @@ def write_bird_caption_to_exif(image_path, caption_text):
         return False, "ExifTool不可用，无法写入EXIF"
 
     try:
-        with exiftool.ExifToolHelper() as et:
+        with exiftool.ExifToolHelper(executable=EXIFTOOL_PATH) as et:
             # 写入Caption字段
             et.set_tags(
                 image_path,

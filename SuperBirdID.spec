@@ -4,7 +4,9 @@
 a = Analysis(
     ['SuperBirdID_GUI.py'],
     pathex=[],
-    binaries=[],
+    binaries=[
+        ('exiftool', 'exiftool'),  # ExifTool二进制文件
+    ],
     datas=[
         ('icon.png', '.'),
         ('icon.icns', '.'),

@@ -12,6 +12,9 @@ import base64
 from io import BytesIO
 from PIL import Image
 import tempfile
+import torch
+import numpy as np
+import cv2
 
 # 导入核心识别模块
 from SuperBirdId import (
@@ -54,10 +57,56 @@ def ensure_models_loaded():
     if ebird_filter is None and EBIRD_FILTER_AVAILABLE:
         try:
             from ebird_country_filter import eBirdCountryFilter
-            ebird_filter = eBirdCountryFilter()
+            # eBird API key (用于地理位置过滤)
+            ebird_filter = eBirdCountryFilter(api_key="7erj90ufajtt")
             print("✓ eBird过滤器加载完成")
         except Exception as e:
             print(f"⚠️ eBird过滤器加载失败: {e}")
+
+def predict_bird(image, top_k=3):
+    """
+    使用分类器预测鸟类
+    返回: [(class_idx, confidence), ...]
+    """
+    # 确保图像是PIL Image
+    if not isinstance(image, Image.Image):
+        image = Image.fromarray(image)
+
+    # 调整大小到224x224
+    image = image.resize((224, 224), Image.LANCZOS)
+
+    # 转换为numpy数组
+    img_array = np.array(image)
+
+    # 转换为BGR通道顺序（OpenCV格式）
+    bgr_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+
+    # ImageNet标准化 (BGR格式)
+    mean = np.array([0.406, 0.456, 0.485])  # BGR: B, G, R
+    std = np.array([0.225, 0.224, 0.229])
+
+    normalized_array = (bgr_array / 255.0 - mean) / std
+    input_tensor = torch.from_numpy(normalized_array).permute(2, 0, 1).unsqueeze(0).float()
+
+    # 推理
+    with torch.no_grad():
+        output = classifier(input_tensor)
+
+    # 温度锐化: 提升置信度 (T=0.6)
+    TEMPERATURE = 0.6
+    probabilities = torch.nn.functional.softmax(output[0] / TEMPERATURE, dim=0)
+
+    # 获取top-k结果
+    top_probs, top_indices = torch.topk(probabilities, min(top_k, len(probabilities)))
+
+    # 返回结果: [(class_idx, confidence), ...]
+    results = []
+    for i in range(len(top_indices)):
+        class_idx = top_indices[i].item()
+        confidence = top_probs[i].item() * 100  # 转换为百分比
+        results.append((class_idx, confidence))
+
+    return results
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -172,30 +221,49 @@ def recognize_bird():
                 }
 
         # 执行识别
-        predictions = classifier.predict(processed_image)
+        predictions = predict_bird(processed_image, top_k=top_k)
 
         # 处理结果
         results = []
-        for i, (class_idx, confidence) in enumerate(predictions[:top_k], 1):
-            if class_idx in bird_info_dict:
-                bird = bird_info_dict[class_idx]
+        for i, (class_idx, confidence) in enumerate(predictions, 1):
+            # bird_info_dict 是数组，检查索引范围
+            if 0 <= class_idx < len(bird_info_dict):
+                bird_data = bird_info_dict[class_idx]
+
+                # bird_data 是列表: [cn_name, en_name, scientific_name, ...]
+                cn_name = bird_data[0] if len(bird_data) > 0 else "未知"
+                en_name = bird_data[1] if len(bird_data) > 1 else "Unknown"
+                scientific_name = bird_data[2] if len(bird_data) > 2 else ""
 
                 # eBird匹配检查
                 ebird_match = False
                 if use_gps and gps_info and DATABASE_AVAILABLE and db_manager:
                     ebird_match = db_manager.check_species_in_region(
-                        bird['scientific_name'],
+                        scientific_name,
                         gps_info['region']
                     )
 
-                results.append({
+                # 从数据库获取详细描述
+                description = None
+                if DATABASE_AVAILABLE and db_manager:
+                    bird_detail = db_manager.get_bird_by_class_id(class_idx)
+                    if bird_detail:
+                        description = bird_detail.get('short_description_zh')
+
+                result_item = {
                     'rank': i,
-                    'cn_name': bird['cn_name'],
-                    'en_name': bird['en_name'],
-                    'scientific_name': bird['scientific_name'],
+                    'cn_name': cn_name,
+                    'en_name': en_name,
+                    'scientific_name': scientific_name,
                     'confidence': float(confidence),
                     'ebird_match': ebird_match
-                })
+                }
+
+                # 只在有描述时添加
+                if description:
+                    result_item['description'] = description
+
+                results.append(result_item)
 
         # 清理临时文件
         if temp_file:

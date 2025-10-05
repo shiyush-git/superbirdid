@@ -265,27 +265,54 @@ class BirdDatabaseManager:
         
         return stats
     
+    def check_species_in_region(self, scientific_name: str, region: str = None) -> bool:
+        """
+        检查物种是否在指定区域出现（简化版本，仅检查物种是否存在于数据库）
+
+        Args:
+            scientific_name: 物种学名
+            region: 地理区域（暂未使用，保留用于未来扩展）
+
+        Returns:
+            True如果物种存在于数据库，否则False
+        """
+        query = """
+        SELECT COUNT(*)
+        FROM BirdCountInfo
+        WHERE scientific_name = ?
+        """
+
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute(query, (scientific_name,))
+                count = cursor.fetchone()[0]
+                return count > 0
+        except Exception as e:
+            print(f"检查物种区域失败 (学名: {scientific_name}): {e}")
+            return False
+
     def validate_ebird_codes_with_country(self, ebird_species_set: Set[str]) -> Dict:
         """
         验证eBird代码与国家物种列表的匹配情况
-        
+
         Args:
             ebird_species_set: 国家物种eBird代码集合
-            
+
         Returns:
             验证结果字典
         """
         if not ebird_species_set:
             return {"error": "Empty eBird species set"}
-        
+
         # 获取数据库中的所有eBird代码
         db_codes = self.get_all_ebird_codes()
-        
+
         # 计算匹配情况
         matched_codes = ebird_species_set.intersection(db_codes)
         unmatched_in_country = ebird_species_set - db_codes
         unmatched_in_db = db_codes - ebird_species_set
-        
+
         return {
             "country_species_total": len(ebird_species_set),
             "database_species_total": len(db_codes),

@@ -42,7 +42,7 @@ import json
 class SuperBirdIDGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("SuperBirdID - AI 鸟类智能识别系统")
+        self.root.title("SuperBirdID - 鸟类识别 · AI智能 · 离线 · 免费")
 
         # 获取屏幕尺寸并设置窗口大小为屏幕的80%
         screen_width = self.root.winfo_screenwidth()
@@ -405,18 +405,18 @@ class SuperBirdIDGUI:
                         bg=self.colors['bg'])
         title.pack(side=tk.LEFT)
 
-        db_info = tk.Label(title_line, text="  ·  10,964 种鸟类",
-                          font=tkfont.Font(family='SF Pro Text', size=13),
+        db_info = tk.Label(title_line, text=" 智能识别 10,965 种鸟",
+                          font=tkfont.Font(family='SF Pro Text', size=14),
                           fg=self.colors['text_secondary'],
                           bg=self.colors['bg'])
         db_info.pack(side=tk.LEFT)
 
-        # 副标题
-        subtitle = tk.Label(title_text_frame, text="AI 鸟类智能识别系统",
-                           font=tkfont.Font(family='SF Pro Text', size=14),
-                           fg=self.colors['text_secondary'],
-                           bg=self.colors['bg'])
-        subtitle.pack(anchor='w', pady=(4, 0))
+        # # 副标题
+        # subtitle = tk.Label(title_text_frame, text="AI 鸟类智能识别系统",
+        #                    font=tkfont.Font(family='SF Pro Text', size=14),
+        #                    fg=self.colors['text_secondary'],
+        #                    bg=self.colors['bg'])
+        # subtitle.pack(anchor='w', pady=(4, 0))
 
     def create_upload_area(self, parent):
         """创建图片上传/显示区域"""
