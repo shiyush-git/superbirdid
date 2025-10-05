@@ -1660,15 +1660,15 @@ class SuperBirdIDGUI:
         # 写入Caption按钮
         write_btn = tk.Button(button_frame,
                              text="📝 写入到EXIF Caption",
-                             font=self.fonts['button'],
+                             font=tkfont.Font(family='SF Pro Display', size=14, weight='bold'),
                              bg='#ffffff',
                              fg='#000000',
                              activebackground='#e0e0e0',
                              activeforeground='#000000',
                              relief='solid',
                              bd=2,
-                             padx=20,
-                             pady=10,
+                             padx=30,
+                             pady=15,
                              cursor='hand2',
                              command=lambda: self.write_caption_and_close(
                                  bird_info['short_description'] or bird_info['full_description'][:200],
@@ -1679,15 +1679,15 @@ class SuperBirdIDGUI:
         # 关闭按钮
         close_btn = tk.Button(button_frame,
                              text="关闭",
-                             font=self.fonts['button'],
+                             font=tkfont.Font(family='SF Pro Display', size=14, weight='bold'),
                              bg='#ffffff',
                              fg='#000000',
                              activebackground='#e0e0e0',
                              activeforeground='#000000',
                              relief='solid',
                              bd=2,
-                             padx=20,
-                             pady=10,
+                             padx=30,
+                             pady=15,
                              cursor='hand2',
                              command=dialog.destroy)
         close_btn.pack(side=tk.RIGHT)
