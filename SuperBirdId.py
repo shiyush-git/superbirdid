@@ -64,7 +64,28 @@ except ImportError:
     print("警告: 数据库管理器模块未找到，将使用传统JSON文件")
 
 # --- 获取脚本所在目录 ---
-script_dir = os.path.dirname(os.path.abspath(__file__))
+# 支持 PyInstaller 打包环境
+if getattr(sys, 'frozen', False):
+    # 运行在 PyInstaller 打包的环境中
+    script_dir = sys._MEIPASS
+else:
+    # 运行在普通 Python 环境中
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# --- 获取用户数据目录 ---
+def get_user_data_dir():
+    """获取用户数据目录，用于存储缓存等可写文件"""
+    if sys.platform == 'darwin':  # macOS
+        # 使用用户文档目录下的 SuperBirdID_File 文件夹
+        user_data_dir = os.path.expanduser('~/Documents/SuperBirdID_File')
+    elif sys.platform == 'win32':  # Windows
+        user_data_dir = os.path.join(os.path.expanduser('~'), 'Documents', 'SuperBirdID_File')
+    else:  # Linux
+        user_data_dir = os.path.join(os.path.expanduser('~'), 'Documents', 'SuperBirdID_File')
+
+    # 确保目录存在
+    os.makedirs(user_data_dir, exist_ok=True)
+    return user_data_dir
 
 # --- YOLO鸟类检测器 ---
 class YOLOBirdDetector:
@@ -176,14 +197,12 @@ GEOGRAPHIC_REGIONS = {
 # --- 加载模型和数据 ---
 PYTORCH_CLASSIFICATION_MODEL_PATH = os.path.join(script_dir, 'birdid2024.pt')
 BIRD_INFO_PATH = os.path.join(script_dir, 'birdinfo.json')
-ENDEMIC_PATH = os.path.join(script_dir, 'endemic.json')
 LABELMAP_PATH = os.path.join(script_dir, 'labelmap.csv')
 
 # 全局变量 - 使用懒加载
 classifier = None
 db_manager = None
 bird_info = None
-endemic_info = None
 labelmap_data = None
 
 def decrypt_model(encrypted_path: str, password: str) -> bytes:
@@ -232,24 +251,35 @@ def lazy_load_classifier():
     global classifier
     if classifier is None:
         print("正在加载AI模型...")
+        print(f"DEBUG: script_dir = {script_dir}")
+        print(f"DEBUG: sys.frozen = {getattr(sys, 'frozen', False)}")
+        if getattr(sys, 'frozen', False):
+            print(f"DEBUG: sys._MEIPASS = {sys._MEIPASS}")
 
         # 固定密码（与加密工具相同）
         SECRET_PASSWORD = "SuperBirdID_2024_AI_Model_Encryption_Key_v1"
 
         # 检查是否存在加密模型
         encrypted_model_path = PYTORCH_CLASSIFICATION_MODEL_PATH + '.enc'
+        print(f"DEBUG: 基础模型路径 = {PYTORCH_CLASSIFICATION_MODEL_PATH}")
+        print(f"DEBUG: 加密模型路径 = {encrypted_model_path}")
+        print(f"DEBUG: 加密模型存在? {os.path.exists(encrypted_model_path)}")
+        print(f"DEBUG: 未加密模型存在? {os.path.exists(PYTORCH_CLASSIFICATION_MODEL_PATH)}")
 
         if os.path.exists(encrypted_model_path):
             # 加载加密模型
             print("检测到加密模型，正在解密...")
             try:
                 model_data = decrypt_model(encrypted_model_path, SECRET_PASSWORD)
+                print(f"DEBUG: 解密后数据大小 = {len(model_data) / (1024*1024):.2f} MB")
 
                 # 将解密的数据写入临时文件
                 import tempfile
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.pt') as tmp_file:
                     tmp_file.write(model_data)
                     tmp_model_path = tmp_file.name
+
+                print(f"DEBUG: 临时模型文件 = {tmp_model_path}")
 
                 # 加载临时模型文件
                 classifier = torch.jit.load(tmp_model_path)
@@ -264,19 +294,25 @@ def lazy_load_classifier():
                 print("✓ 加密模型加载完成")
             except Exception as e:
                 print(f"❌ 加密模型加载失败: {e}")
+                import traceback
+                traceback.print_exc()
                 # 回退到未加密模型
                 if os.path.exists(PYTORCH_CLASSIFICATION_MODEL_PATH):
                     print("尝试加载未加密模型...")
                     classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
                     classifier.eval()
-                    print("✓ PyTorch分类模型加载完成")
+                    print("✓ 未加密模型加载完成")
                 else:
                     raise RuntimeError("无法加载模型：加密模型解密失败且未找到未加密模型")
         else:
             # 加载未加密模型
-            classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
-            classifier.eval()
-            print("✓ PyTorch分类模型加载完成")
+            print("未找到加密模型，尝试加载未加密模型...")
+            if os.path.exists(PYTORCH_CLASSIFICATION_MODEL_PATH):
+                classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
+                classifier.eval()
+                print("✓ 未加密模型加载完成")
+            else:
+                raise RuntimeError(f"未找到模型文件: {PYTORCH_CLASSIFICATION_MODEL_PATH}")
 
     return classifier
 
@@ -290,14 +326,6 @@ def lazy_load_bird_info():
         print("✓ 鸟类信息加载完成")
     return bird_info
 
-def lazy_load_endemic_info():
-    """懒加载特有种信息"""
-    global endemic_info
-    if endemic_info is None:
-        with open(ENDEMIC_PATH, 'r') as f:
-            endemic_info = json.load(f)
-        print("✓ 特有种信息加载完成")
-    return endemic_info
 
 def lazy_load_database():
     """懒加载数据库管理器"""
@@ -339,7 +367,6 @@ def verify_files():
     required_files = [
         PYTORCH_CLASSIFICATION_MODEL_PATH,
         BIRD_INFO_PATH,
-        ENDEMIC_PATH,
         LABELMAP_PATH
     ]
 
@@ -918,7 +945,6 @@ def run_ultimate_classification(image, user_region=None, country_filter=None, eb
     # 懒加载所需组件
     model = lazy_load_classifier()
     bird_data = lazy_load_bird_info()
-    endemic_data = lazy_load_endemic_info()
     db_manager = lazy_load_database()
     # 测试多种增强方法 + 双预处理对比
     enhancement_methods = [
@@ -1004,9 +1030,22 @@ def run_ultimate_classification(image, user_region=None, country_filter=None, eb
                 continue
             
             try:
-                if class_id < len(bird_data) and len(bird_data[class_id]) >= 2:
+                # 优先使用数据库查询
+                bird_name_cn = None
+                bird_name_en = None
+
+                if db_manager:
+                    bird_info = db_manager.get_bird_by_class_id(class_id)
+                    if bird_info:
+                        bird_name_cn = bird_info['chinese_simplified']
+                        bird_name_en = bird_info['english_name']
+
+                # 如果数据库查询失败，回退到 bird_data
+                if not bird_name_cn and class_id < len(bird_data) and len(bird_data[class_id]) >= 2:
                     bird_name_cn = bird_data[class_id][0]
                     bird_name_en = bird_data[class_id][1]
+
+                if bird_name_cn and bird_name_en:
                     name = f"{bird_name_cn} ({bird_name_en})"
                     
                     # 移除地理区域名称匹配的置信度加成（只用于显示信息）
@@ -1218,7 +1257,49 @@ if __name__ == "__main__":
     if auto_region and auto_country:
         # GPS自动检测成功
         print(f"🎯 GPS自动检测: {auto_region}")
-        print("筛选选项: 1.GPS精确位置(25km) 2.国家级别 3.手动选择")
+
+        # 检查是否已有该位置的缓存
+        if EBIRD_FILTER_AVAILABLE:
+            EBIRD_API_KEY = os.environ.get('EBIRD_API_KEY', '60nan25sogpo')
+            cache_dir = os.path.join(get_user_data_dir(), 'ebird_cache')
+            temp_filter = eBirdCountryFilter(EBIRD_API_KEY, cache_dir=cache_dir, offline_dir=os.path.join(script_dir, "offline_ebird_data"))
+            cache_file = temp_filter.get_location_cache_file_path(latitude, longitude, 25)
+            has_cache = temp_filter.is_cache_valid(cache_file)
+
+            if not has_cache:
+                print(f"\n💡 提示: 检测到GPS位置数据，但本地暂无缓存")
+                print(f"   可以获取该位置25km范围内的鸟类观察记录")
+                print(f"   数据将缓存到: {cache_dir}/")
+                print(f"   缓存有效期: 30天")
+                fetch_choice = input("是否立即获取当地鸟类数据？(y/n，直接回车为是): ").strip().lower()
+
+                if fetch_choice in ['', 'y', 'yes']:
+                    print(f"\n正在从eBird获取 ({latitude:.3f}, {longitude:.3f}) 附近数据...")
+                    species_list = temp_filter.get_location_species_list(latitude, longitude, 25)
+                    if species_list:
+                        # 获取缓存详情
+                        cache_info = temp_filter.get_location_cache_info(latitude, longitude, 25)
+                        if cache_info:
+                            obs_count = cache_info.get('observation_count', len(species_list))
+                            print(f"✓ 成功获取 {len(species_list)} 个物种（基于 {obs_count} 条观察记录）")
+                        else:
+                            print(f"✓ 成功获取并缓存 {len(species_list)} 个物种的数据")
+                        print(f"   缓存文件: {cache_file}")
+                    else:
+                        print("⚠ 获取失败，将使用现有数据")
+                else:
+                    print("跳过获取，将使用现有数据")
+            else:
+                # 显示缓存详情
+                cache_info = temp_filter.get_location_cache_info(latitude, longitude, 25)
+                if cache_info:
+                    species_count = cache_info.get('species_count', 0)
+                    obs_count = cache_info.get('observation_count', species_count)
+                    print(f"✓ 本地已有缓存: {species_count} 个物种（基于 {obs_count} 条观察记录）")
+                else:
+                    print(f"✓ 本地已有该位置的缓存数据")
+
+        print("\n筛选选项: 1.GPS精确位置(25km) 2.国家级别 3.手动选择")
         gps_choice = input("请选择筛选方式 (1-3，直接回车使用GPS精确): ").strip() or '1'
 
         if gps_choice == '1':
@@ -1234,26 +1315,114 @@ if __name__ == "__main__":
         else:
             # 用户选择手动设置
             use_precise_gps = False
-            print("可选区域: 1.Asia/China  2.Australia  3.Europe  4.North_America  5.全球模式")
-            region_country_map = {
-                '1': ('Asia', 'china'),
-                '2': ('Australia', 'australia'),
-                '3': ('Europe', 'germany'),
-                '4': ('North_America', 'usa'),
-                '5': (None, None)
-            }
 
-            try:
-                choice = input("请选择 (1-5): ").strip()
-                user_region, country_code = region_country_map.get(choice, ('Australia', 'australia'))
+            # 检查离线数据可用性
+            offline_index_path = os.path.join(script_dir, "offline_ebird_data", "offline_index.json")
+            available_countries = {}
 
-                if user_region:
-                    print(f"✓ 手动选择: {user_region} + eBird({country_code})")
-                else:
-                    print("✓ 手动选择: 全球模式")
-            except:
-                user_region, country_code = 'Australia', 'australia'
-                print("✓ 输入无效，默认使用: Australia + eBird(australia)")
+            if os.path.exists(offline_index_path):
+                try:
+                    with open(offline_index_path, 'r', encoding='utf-8') as f:
+                        offline_index = json.load(f)
+                        available_countries = offline_index.get('countries', {})
+                except Exception as e:
+                    print(f"⚠ 读取离线数据索引失败: {e}")
+
+            if available_countries:
+                # 有离线数据，显示所有可用国家（与无GPS时的逻辑相同）
+                print(f"\n📦 检测到 {len(available_countries)} 个国家的离线eBird数据")
+                print("=" * 50)
+
+                # 创建国家代码到中文名称的映射
+                country_names = {
+                    'AU': '澳大利亚', 'CN': '中国', 'US': '美国', 'CA': '加拿大',
+                    'BR': '巴西', 'IN': '印度', 'ID': '印度尼西亚', 'MX': '墨西哥',
+                    'CO': '哥伦比亚', 'PE': '秘鲁', 'EC': '厄瓜多尔', 'BO': '玻利维亚',
+                    'VE': '委内瑞拉', 'CL': '智利', 'AR': '阿根廷', 'ZA': '南非',
+                    'KE': '肯尼亚', 'TZ': '坦桑尼亚', 'MG': '马达加斯加', 'CM': '喀麦隆',
+                    'GH': '加纳', 'NG': '尼日利亚', 'ET': '埃塞俄比亚', 'UG': '乌干达',
+                    'CR': '哥斯达黎加', 'PA': '巴拿马', 'GT': '危地马拉', 'NI': '尼加拉瓜',
+                    'HN': '洪都拉斯', 'BZ': '伯利兹', 'SV': '萨尔瓦多', 'NO': '挪威',
+                    'SE': '瑞典', 'FI': '芬兰', 'GB': '英国', 'FR': '法国',
+                    'ES': '西班牙', 'IT': '意大利', 'DE': '德国', 'PL': '波兰',
+                    'RO': '罗马尼亚', 'TR': '土耳其', 'RU': '俄罗斯', 'JP': '日本',
+                    'KR': '韩国', 'TH': '泰国', 'VN': '越南', 'PH': '菲律宾',
+                    'MY': '马来西亚', 'SG': '新加坡', 'NZ': '新西兰'
+                }
+
+                # 按区域分组显示
+                regions = {
+                    '亚洲': ['CN', 'IN', 'ID', 'JP', 'KR', 'TH', 'VN', 'PH', 'MY', 'SG', 'RU'],
+                    '大洋洲': ['AU', 'NZ'],
+                    '欧洲': ['GB', 'DE', 'FR', 'IT', 'ES', 'NO', 'SE', 'FI', 'PL', 'RO', 'TR'],
+                    '北美洲': ['US', 'CA', 'MX', 'CR', 'PA', 'GT', 'NI', 'HN', 'BZ', 'SV'],
+                    '南美洲': ['BR', 'CO', 'PE', 'EC', 'BO', 'VE', 'CL', 'AR'],
+                    '非洲': ['ZA', 'KE', 'TZ', 'MG', 'CM', 'GH', 'NG', 'ET', 'UG']
+                }
+
+                # 创建编号映射
+                country_list = []
+                idx = 1
+
+                for region_name, region_countries in regions.items():
+                    available_in_region = [cc for cc in region_countries if cc in available_countries]
+                    if available_in_region:
+                        print(f"\n【{region_name}】")
+                        for cc in available_in_region:
+                            species_count = available_countries[cc].get('species_count', 0)
+                            cn_name = country_names.get(cc, cc)
+                            print(f"  {idx}. {cn_name} ({cc}) - {species_count} 种鸟类")
+                            country_list.append(cc)
+                            idx += 1
+
+                print(f"\n  {idx}. 全球模式（不使用国家过滤）")
+                print("=" * 50)
+
+                try:
+                    choice = input(f"请选择国家 (1-{idx}，直接回车默认澳大利亚): ").strip()
+
+                    if not choice:
+                        # 默认澳大利亚
+                        country_code = 'AU'
+                        user_region = 'Australia'
+                        print(f"✓ 已选择: 澳大利亚 (AU) - {available_countries['AU']['species_count']} 种鸟类")
+                    elif choice.isdigit():
+                        choice_num = int(choice)
+                        if 1 <= choice_num < idx:
+                            # 选择了具体国家
+                            country_code = country_list[choice_num - 1]
+                            cn_name = country_names.get(country_code, country_code)
+                            species_count = available_countries[country_code]['species_count']
+                            user_region = None  # 使用国家代码，不用区域名
+                            print(f"✓ 已选择: {cn_name} ({country_code}) - {species_count} 种鸟类")
+                        elif choice_num == idx:
+                            # 选择全球模式
+                            country_code = None
+                            user_region = None
+                            print("✓ 已选择: 全球模式（不使用eBird过滤）")
+                        else:
+                            # 无效选择，默认澳大利亚
+                            country_code = 'AU'
+                            user_region = 'Australia'
+                            print(f"⚠ 输入无效，默认使用: 澳大利亚 (AU) - {available_countries['AU']['species_count']} 种鸟类")
+                    else:
+                        # 无效输入，默认澳大利亚
+                        country_code = 'AU'
+                        user_region = 'Australia'
+                        print(f"⚠ 输入无效，默认使用: 澳大利亚 (AU) - {available_countries['AU']['species_count']} 种鸟类")
+
+                except Exception as e:
+                    # 发生错误，默认澳大利亚
+                    country_code = 'AU'
+                    user_region = 'Australia'
+                    print(f"⚠ 发生错误 ({e})，默认使用: 澳大利亚 (AU)")
+            else:
+                # 没有离线数据，直接使用全球模式
+                print("⚠ 未检测到离线eBird数据")
+                print("💡 将使用全球模式（无地理过滤）")
+                print("   提示：如需地理过滤，请下载离线eBird数据包")
+                user_region = None
+                country_code = None
 
     else:
         # 无GPS数据，检查是否有离线eBird数据可用
@@ -1360,29 +1529,14 @@ if __name__ == "__main__":
                 user_region = 'Australia'
                 print(f"⚠ 发生错误 ({e})，默认使用: 澳大利亚 (AU)")
         else:
-            # 没有离线数据，使用传统选择
-            print("⚠ 未检测到离线eBird数据")
-            print("可选区域: 1.Asia/China  2.Australia  3.Europe  4.North_America  5.全球模式")
-            region_country_map = {
-                '1': ('Asia', 'china'),
-                '2': ('Australia', 'australia'),
-                '3': ('Europe', 'germany'),
-                '4': ('North_America', 'usa'),
-                '5': (None, None)
-            }
-
-            try:
-                choice = input("请选择 (1-5，直接回车默认澳洲): ").strip() or '2'
-                user_region, country_code = region_country_map.get(choice, (None, None))
-
-                if user_region:
-                    print(f"✓ 已选择: {user_region} + eBird({country_code})")
-                else:
-                    print("✓ 已选择: 全球模式")
-
-            except:
-                user_region, country_code = 'Australia', 'australia'
-                print("✓ 输入无效，默认使用: Australia + eBird(australia)")
+            # 没有离线数据，且无GPS信息，直接使用全球模式
+            print("⚠ 未检测到离线eBird数据，且无GPS信息")
+            print("💡 将使用全球模式（无地理过滤）")
+            print("   提示：如需地理过滤，请：")
+            print("   1. 使用带GPS信息的照片，或")
+            print("   2. 下载离线eBird数据包")
+            user_region = None
+            country_code = None
 
     # eBird国家物种过滤设置
     country_filter = None
@@ -1390,9 +1544,10 @@ if __name__ == "__main__":
 
     if EBIRD_FILTER_AVAILABLE and (country_code or (use_precise_gps and latitude is not None and longitude is not None)):
         try:
-            # eBird API密钥
-            EBIRD_API_KEY = "60nan25sogpo"
-            country_filter = eBirdCountryFilter(EBIRD_API_KEY, offline_dir="offline_ebird_data")
+            # eBird API密钥（优先使用环境变量，否则使用默认值）
+            EBIRD_API_KEY = os.environ.get('EBIRD_API_KEY', '60nan25sogpo')
+            cache_dir = os.path.join(get_user_data_dir(), 'ebird_cache')
+            country_filter = eBirdCountryFilter(EBIRD_API_KEY, cache_dir=cache_dir, offline_dir=os.path.join(script_dir, "offline_ebird_data"))
 
             # 检查离线数据可用性
             if country_filter.is_offline_data_available():

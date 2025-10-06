@@ -570,7 +570,6 @@
     "bkhpar",
     "sunpar1",
     "janpar1",
-    "buwmac1",
     "yecmac",
     "baymac",
     "bltmac1",
@@ -966,7 +965,7 @@
     "redsis1",
     "cubgra"
   ],
-  "species_count": 964,
-  "cached_at": "2025-09-24T09:11:34.676503",
+  "species_count": 963,
+  "cached_at": "2025-10-06T17:33:55.710672",
   "api_version": "2.0"
 }

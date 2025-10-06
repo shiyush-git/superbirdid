@@ -218,6 +218,137 @@ class eBirdCountryFilter:
             print(f"网络请求失败: {e}")
             return None
 
+    def get_region_code_from_gps(self, lat: float, lon: float) -> tuple:
+        """
+        根据GPS坐标获取eBird区域代码和国家代码
+
+        Args:
+            lat: 纬度
+            lon: 经度
+
+        Returns:
+            (region_code, country_code) 元组
+            - region_code: 如 "AU-NT" (澳大利亚北领地)
+            - country_code: 如 "AU" (澳大利亚)
+            失败返回 (None, None)
+        """
+        try:
+            # 使用Nominatim反向地理编码获取详细的行政区划信息
+            url = "https://nominatim.openstreetmap.org/reverse"
+            params = {
+                'lat': lat,
+                'lon': lon,
+                'format': 'json',
+                'addressdetails': 1,
+                'accept-language': 'en'  # 使用英文返回，便于映射
+            }
+            headers = {
+                'User-Agent': 'SuperBirdID/1.0'  # Nominatim要求设置User-Agent
+            }
+
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                data = response.json()
+                address = data.get('address', {})
+
+                # 获取国家代码（ISO 3166-1 alpha-2）
+                country_code = address.get('country_code', '').upper()
+
+                if not country_code:
+                    print(f"无法从坐标 ({lat}, {lon}) 获取国家代码")
+                    return None, None
+
+                # 获取州/省信息（不同国家字段名不同）
+                state = (address.get('state') or
+                        address.get('province') or
+                        address.get('region') or
+                        address.get('territory') or
+                        address.get('state_district'))
+
+                if state:
+                    # 将州/省名称映射到eBird代码
+                    state_code = self.map_state_to_ebird_code(country_code, state)
+                    if state_code:
+                        region_code = f"{country_code}-{state_code}"
+                        print(f"GPS定位: {country_code} / {state} → {region_code}")
+                        return region_code, country_code
+                    else:
+                        # 无法映射州/省代码，只返回国家代码
+                        print(f"GPS定位: {country_code} / {state} (无法映射州/省代码)")
+                        return country_code, country_code
+                else:
+                    # 没有州/省信息，只返回国家代码
+                    print(f"GPS定位: {country_code} (无州/省信息)")
+                    return country_code, country_code
+
+        except Exception as e:
+            print(f"反向地理编码失败: {e}")
+
+        return None, None
+
+    def map_state_to_ebird_code(self, country_code: str, state_name: str) -> Optional[str]:
+        """
+        将州/省名称映射到eBird代码
+
+        Args:
+            country_code: 国家代码（如 "AU"）
+            state_name: 州/省名称（如 "Northern Territory"）
+
+        Returns:
+            eBird州/省代码（如 "NT"），失败返回None
+        """
+        # 常见国家的州/省映射
+        state_mappings = {
+            'AU': {  # 澳大利亚
+                'Northern Territory': 'NT',
+                'New South Wales': 'NSW',
+                'Queensland': 'QLD',
+                'South Australia': 'SA',
+                'Tasmania': 'TAS',
+                'Victoria': 'VIC',
+                'Western Australia': 'WA',
+                'Australian Capital Territory': 'ACT',
+            },
+            'US': {  # 美国
+                'California': 'CA',
+                'New York': 'NY',
+                'Texas': 'TX',
+                'Florida': 'FL',
+                # ... 可以继续添加更多州
+            },
+            'CN': {  # 中国（使用数字代码）
+                'Beijing': '11',
+                'Shanghai': '31',
+                'Guangdong': '44',
+                'Sichuan': '51',
+                # ... 可以继续添加更多省份
+            },
+            'CA': {  # 加拿大
+                'Ontario': 'ON',
+                'Quebec': 'QC',
+                'British Columbia': 'BC',
+                'Alberta': 'AB',
+                # ... 可以继续添加更多省份
+            }
+        }
+
+        if country_code not in state_mappings:
+            return None
+
+        # 尝试精确匹配
+        state_map = state_mappings[country_code]
+        if state_name in state_map:
+            return state_map[state_name]
+
+        # 尝试部分匹配（忽略大小写）
+        state_lower = state_name.lower()
+        for full_name, code in state_map.items():
+            if full_name.lower() in state_lower or state_lower in full_name.lower():
+                return code
+
+        return None
+
     def get_location_cache_file_path(self, lat: float, lon: float, radius: int) -> str:
         """获取位置缓存文件路径"""
         # 使用坐标和半径创建唯一的缓存文件名
@@ -225,7 +356,7 @@ class eBirdCountryFilter:
         lon_str = f"{lon:.3f}".replace('.', '_').replace('-', 'n')
         return os.path.join(self.cache_dir, f"location_{lat_str}_{lon_str}_{radius}km.json")
 
-    def fetch_species_list_by_location(self, lat: float, lon: float, radius: int = 25) -> Optional[List[str]]:
+    def fetch_species_list_by_location(self, lat: float, lon: float, radius: int = 25) -> Optional[dict]:
         """
         基于GPS坐标从eBird API获取附近区域的物种列表
 
@@ -235,48 +366,48 @@ class eBirdCountryFilter:
             radius: 搜索半径（公里，最大50km）
 
         Returns:
-            物种代码列表，如果获取失败返回None
+            字典 {'species': List[str], 'observation_count': int} 或 None
         """
         # 限制半径范围
         radius = min(max(radius, 1), 50)
 
-        # 使用eBird的近期观察记录API（最近30天）
+        # 使用eBird的近期观察记录API
+        # 注意：eBird API的back参数支持1-30天
+        # 由于没有直接的全年GPS位置API，我们使用nearby hotspots + region species list的组合策略
         url = f"{self.base_url}/data/obs/geo/recent"
 
         params = {
             'lat': lat,
             'lng': lon,
             'dist': radius,
-            'back': 30,  # 最近30天的记录
+            'back': 30,  # 获取最近30天的观察记录
             'maxResults': 10000,  # 获取更多结果
             'includeProvisional': 'false',  # 只包含审核通过的记录
             'fmt': 'json'
         }
 
         try:
-            print(f"正在获取位置 ({lat:.3f}, {lon:.3f}) 半径 {radius}km 内的鸟类观察记录...")
+            print(f"正在获取位置 ({lat:.3f}, {lon:.3f}) 半径 {radius}km 内最近30天的鸟类观察记录...")
             response = requests.get(url, headers=self.headers, params=params, timeout=30)
 
             if response.status_code == 200:
                 observations = response.json()
-
-                # 提取唯一的物种代码
                 species_codes = list(set(obs['speciesCode'] for obs in observations))
 
-                print(f"成功获取 {len(species_codes)} 个物种（基于 {len(observations)} 条观察记录）")
+                print(f"✓ 最近30天: {len(species_codes)} 个物种（{len(observations)} 条观察记录）")
 
-                # 添加短暂延迟以避免API限制
-                time.sleep(0.1)
-
-                return species_codes
+                return {
+                    'species': species_codes,
+                    'observation_count': len(observations)
+                }
             elif response.status_code == 404:
                 print(f"位置 ({lat}, {lon}) 未找到观察记录")
                 return None
             elif response.status_code == 429:
-                print("API请求限制，请稍后再试")
+                print("⚠️ API请求限制")
                 return None
             else:
-                print(f"API请求失败: {response.status_code}")
+                print(f"⚠️ API请求失败: {response.status_code}")
                 return None
 
         except requests.exceptions.RequestException as e:
@@ -285,7 +416,12 @@ class eBirdCountryFilter:
 
     def get_location_species_list(self, lat: float, lon: float, radius: int = 25) -> Optional[Set[str]]:
         """
-        获取GPS位置附近的鸟类物种列表（优先从缓存加载）
+        获取GPS位置附近的鸟类物种列表（三级回退策略）
+
+        策略优先级：
+        1. GPS位置30天数据（最精确，但物种少）
+        2. GPS所在区域的年度数据（较精确，物种较多）
+        3. GPS所在国家的离线数据（兜底方案，物种最多）
 
         Args:
             lat: 纬度
@@ -304,22 +440,73 @@ class eBirdCountryFilter:
                     cache_data = json.load(f)
 
                 species_set = set(cache_data.get('species', []))
-                print(f"从缓存加载位置物种列表: {len(species_set)} 个物种")
+                data_source = cache_data.get('data_source', 'unknown')
+                print(f"从缓存加载位置物种列表: {len(species_set)} 个物种 (来源: {data_source})")
                 return species_set
             except Exception as e:
                 print(f"加载位置缓存失败: {e}")
 
-        # 缓存无效或不存在，从API获取
-        species_list = self.fetch_species_list_by_location(lat, lon, radius)
+        # 缓存无效或不存在，使用三级回退策略
+        species_list = None
+        data_source = None
 
+        # 第1级：尝试获取GPS位置30天数据
+        print("策略1: 获取GPS位置30天数据...")
+        api_result = self.fetch_species_list_by_location(lat, lon, radius)
+
+        # 定义一个合理的阈值：如果30天数据少于50个物种，认为数据不足
+        MIN_SPECIES_THRESHOLD = 50
+
+        if api_result and 'species' in api_result and len(api_result['species']) >= MIN_SPECIES_THRESHOLD:
+            species_list = api_result['species']
+            data_source = "GPS位置30天数据"
+            observation_count = api_result.get('observation_count', len(species_list))
+            print(f"✓ 使用GPS位置30天数据: {len(species_list)} 个物种")
+        else:
+            # GPS 30天数据为空或不足，尝试区域年度数据
+            gps_species_count = len(api_result.get('species', [])) if api_result else 0
+            if gps_species_count > 0:
+                print(f"⚠️ GPS位置30天数据仅 {gps_species_count} 个物种，尝试区域年度数据...")
+            else:
+                print("⚠️ GPS位置30天数据为空，尝试区域年度数据...")
+
+            # 第2级：尝试获取GPS所在区域的年度数据
+            region_code, country_code = self.get_region_code_from_gps(lat, lon)
+
+            if region_code:
+                print(f"策略2: 获取区域 {region_code} 的年度数据...")
+                region_species = self.get_country_species_list(region_code)
+
+                if region_species and len(region_species) > 0:
+                    species_list = list(region_species)
+                    data_source = f"区域{region_code}年度数据"
+                    observation_count = len(species_list)
+                    print(f"✓ 使用区域年度数据: {len(species_list)} 个物种")
+                else:
+                    print(f"⚠️ 区域 {region_code} 年度数据获取失败")
+
+            # 第3级：如果区域数据也失败，使用国家离线数据
+            if not species_list and country_code:
+                print("策略3: 使用国家离线数据作为兜底...")
+                country_species = self.load_offline_species_list(country_code)
+                if country_species and len(country_species) > 0:
+                    species_list = list(country_species)
+                    data_source = f"国家{country_code}离线数据"
+                    observation_count = len(species_list)
+                    print(f"✓ 使用国家离线数据: {len(species_list)} 个物种")
+                else:
+                    print(f"⚠️ 国家 {country_code} 离线数据不可用")
+
+        # 保存到缓存
         if species_list:
-            # 保存到缓存
             cache_data = {
                 'lat': lat,
                 'lon': lon,
                 'radius': radius,
                 'species': species_list,
                 'species_count': len(species_list),
+                'observation_count': observation_count if 'observation_count' in locals() else len(species_list),
+                'data_source': data_source,
                 'cached_at': datetime.now().isoformat(),
                 'api_version': '2.0'
             }
@@ -327,38 +514,88 @@ class eBirdCountryFilter:
             try:
                 with open(cache_file, 'w', encoding='utf-8') as f:
                     json.dump(cache_data, f, ensure_ascii=False, indent=2)
-                print(f"已缓存位置物种列表: {len(species_list)} 个物种")
+                print(f"已缓存位置物种列表: {len(species_list)} 个物种 (来源: {data_source})")
             except Exception as e:
                 print(f"保存位置缓存失败: {e}")
 
             return set(species_list)
 
+        print("❌ 所有策略均失败，无法获取物种数据")
         return None
-    
+
+    def get_location_cache_info(self, lat: float, lon: float, radius: int = 25) -> Optional[dict]:
+        """
+        获取位置缓存的详细信息
+
+        Returns:
+            字典包含 {'species_count': int, 'observation_count': int, 'cached_at': str, 'data_source': str} 或 None
+        """
+        cache_file = self.get_location_cache_file_path(lat, lon, radius)
+
+        if self.is_cache_valid(cache_file):
+            try:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    cache_data = json.load(f)
+                return {
+                    'species_count': cache_data.get('species_count', len(cache_data.get('species', []))),
+                    'observation_count': cache_data.get('observation_count', cache_data.get('species_count', 0)),
+                    'cached_at': cache_data.get('cached_at', ''),
+                    'data_source': cache_data.get('data_source', 'unknown')  # 添加data_source字段
+                }
+            except:
+                return None
+        return None
+
     def get_country_species_list(self, country_input: str) -> Optional[Set[str]]:
         """
-        获取国家的鸟类物种列表（优先级：缓存 > API > 离线数据）
+        获取国家或区域的鸟类物种列表（优先级：缓存 > API > 离线数据）
 
         Args:
-            country_input: 国家名称或代码
+            country_input: 国家名称、国家代码或区域代码（如 "AU", "AU-NT"）
 
         Returns:
             物种代码集合，如果获取失败返回None
         """
-        # 标准化国家输入
-        country_input = country_input.lower().strip()
+        # 标准化输入
+        country_input = country_input.strip()
+
+        # 检查是否是区域代码格式（如 "AU-NT", "US-CA"）
+        if '-' in country_input:
+            # 这是区域代码，直接使用（转大写）
+            region_code = country_input.upper()
+            print(f"检测到区域代码: {region_code}")
+
+            # 1. 首先尝试从缓存加载
+            cached_species = self.load_cached_species_list(region_code)
+            if cached_species is not None:
+                return cached_species
+
+            # 2. 缓存无效，尝试从API获取
+            species_list = self.fetch_species_list_from_api(region_code)
+
+            if species_list:
+                # 保存到缓存
+                self.save_species_list_to_cache(region_code, species_list)
+                return set(species_list)
+
+            # 3. API失败
+            print(f"❌ 无法获取 {region_code} 的鸟类数据")
+            return None
+
+        # 不是区域代码，按国家代码处理
+        country_input_lower = country_input.lower()
 
         # 尝试直接作为国家代码使用
         country_code = country_input.upper()
 
         # 如果不是2位代码，尝试从映射中查找
         if len(country_code) != 2 or not country_code.isalpha():
-            country_code = self.country_codes.get(country_input)
+            country_code = self.country_codes.get(country_input_lower)
 
             if not country_code:
                 # 尝试部分匹配
                 for key, code in self.country_codes.items():
-                    if country_input in key or key in country_input:
+                    if country_input_lower in key or key in country_input_lower:
                         country_code = code
                         break
 
@@ -457,8 +694,9 @@ class eBirdCountryFilter:
 
 def test_ebird_filter():
     """测试eBird过滤器"""
-    # 使用你提供的API密钥
-    api_key = "60nan25sogpo"
+    import os
+    # eBird API密钥（优先使用环境变量，否则使用默认值）
+    api_key = os.environ.get('EBIRD_API_KEY', '60nan25sogpo')
     filter_system = eBirdCountryFilter(api_key)
     
     # 测试获取澳洲鸟类列表
