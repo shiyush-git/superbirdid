@@ -62,4 +62,10 @@ app = BUNDLE(
     name='SuperBirdID.app',
     icon='icon.icns',
     bundle_identifier='com.superbirdid.app',
+    info_plist={
+        'NSSupportsAutomaticTermination': False,
+        'NSSupportsAutomaticGraphicsSwitching': True,
+        'NSAppSleepDisabled': True,
+        'NSQuitAlwaysKeepsWindows': False,  # 禁用Resume功能
+    },
 )

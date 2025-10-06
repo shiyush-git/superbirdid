@@ -1389,11 +1389,19 @@ class SuperBirdIDGUI:
         """运行识别（后台线程）"""
         try:
             self.progress_queue.put(("progress", "🚀 启动AI识别引擎..."))
+            print("DEBUG: 开始识别流程")
 
             # 加载组件
+            print("DEBUG: 正在加载分类模型...")
+            self.progress_queue.put(("progress", "📦 加载AI模型（首次加载约需10-20秒）..."))
             model = lazy_load_classifier()
+            print("DEBUG: 分类模型加载完成")
+
+            print("DEBUG: 正在加载鸟类信息...")
+            self.progress_queue.put(("progress", "📚 加载鸟类数据库..."))
             bird_info = lazy_load_bird_info()
             db_manager = lazy_load_database()
+            print("DEBUG: 数据库加载完成")
 
             self.progress_queue.put(("progress", "🔬 智能分析图片特征..."))
 
@@ -1405,7 +1413,15 @@ class SuperBirdIDGUI:
             ebird_data_source = None  # 记录使用的数据来源
 
             if self.use_gps.get():
-                lat, lon, info = extract_gps_from_exif(self.current_image_path)
+                print(f"DEBUG: 开始提取GPS信息，文件路径: {self.current_image_path}")
+                try:
+                    lat, lon, info = extract_gps_from_exif(self.current_image_path)
+                    print(f"DEBUG: GPS提取完成 - lat={lat}, lon={lon}, info={info}")
+                except Exception as e:
+                    print(f"DEBUG: GPS提取失败: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    lat, lon, info = None, None, None
                 if lat and lon:
                     region, country_code, region_info = get_region_from_gps(lat, lon)
 
@@ -2400,6 +2416,15 @@ class SuperBirdIDGUI:
 
 def main():
     """主函数"""
+    # 禁用macOS的自动恢复功能（防止尝试打开不存在的文件）
+    import sys
+    if sys.platform == 'darwin':
+        try:
+            # 清除命令行参数中的文件路径（macOS Resume传入的）
+            sys.argv = [sys.argv[0]]
+        except:
+            pass
+
     # 尝试使用TkinterDnD，回退到标准Tk
     if DRAG_DROP_AVAILABLE:
         try:

@@ -8,6 +8,14 @@ import csv
 import os
 import sys
 
+# ==================== 设备配置 ====================
+# 分类模型使用 CPU（TorchScript + MPS 有兼容性问题）
+# YOLO 会自动检测并使用 GPU（已验证工作正常）
+CLASSIFIER_DEVICE = torch.device("cpu")
+print(f"📱 分类模型设备: CPU (稳定模式)")
+print(f"📱 YOLO 检测: 自动 GPU 加速")
+# ================================================
+
 # ExifTool支持（可选）
 try:
     import exiftool
@@ -93,13 +101,14 @@ class YOLOBirdDetector:
         if not YOLO_AVAILABLE:
             self.model = None
             return
-            
+
         if model_path is None:
             model_path = os.path.join(script_dir, 'yolo11x.pt')
-        
+
         try:
             self.model = YOLO(model_path)
-            print(f"YOLO模型加载成功: {model_path}")
+            # YOLO会自动检测并使用最佳设备（MPS/CUDA/CPU）
+            print(f"YOLO模型加载成功: {model_path} (自动GPU检测)")
         except Exception as e:
             print(f"YOLO模型加载失败: {e}")
             self.model = None
@@ -136,6 +145,7 @@ class YOLOBirdDetector:
             img_array = np.array(image)
 
             # 使用numpy数组进行YOLO检测
+            # Ultralytics YOLO会自动检测并使用最佳设备（MPS/CUDA/CPU）
             results = self.model(img_array, conf=confidence_threshold)
 
             # 解析检测结果
@@ -207,21 +217,27 @@ labelmap_data = None
 
 def decrypt_model(encrypted_path: str, password: str) -> bytes:
     """解密模型文件并返回解密后的数据"""
+    print("DEBUG: 开始导入加密库...")
     from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
     from cryptography.hazmat.backends import default_backend
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    print("DEBUG: 加密库导入完成")
 
     # 读取加密文件
+    print(f"DEBUG: 读取加密文件: {encrypted_path}")
     with open(encrypted_path, 'rb') as f:
         encrypted_data = f.read()
+    print(f"DEBUG: 读取到 {len(encrypted_data) / (1024*1024):.2f} MB 加密数据")
 
     # 提取 salt, iv, ciphertext
     salt = encrypted_data[:16]
     iv = encrypted_data[16:32]
     ciphertext = encrypted_data[32:]
+    print(f"DEBUG: 解析加密数据结构完成")
 
     # 派生密钥
+    print("DEBUG: 开始密钥派生（PBKDF2 100000次迭代，预计需要5-10秒）...")
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -230,8 +246,10 @@ def decrypt_model(encrypted_path: str, password: str) -> bytes:
         backend=default_backend()
     )
     key = kdf.derive(password.encode())
+    print("DEBUG: 密钥派生完成")
 
     # 解密
+    print("DEBUG: 开始AES解密...")
     cipher = Cipher(
         algorithms.AES(key),
         modes.CBC(iv),
@@ -239,10 +257,12 @@ def decrypt_model(encrypted_path: str, password: str) -> bytes:
     )
     decryptor = cipher.decryptor()
     plaintext_padded = decryptor.update(ciphertext) + decryptor.finalize()
+    print("DEBUG: AES解密完成")
 
     # 移除填充
     padding_length = plaintext_padded[-1]
     plaintext = plaintext_padded[:-padding_length]
+    print(f"DEBUG: 去除填充完成，最终数据大小 {len(plaintext) / (1024*1024):.2f} MB")
 
     return plaintext
 
@@ -281,8 +301,8 @@ def lazy_load_classifier():
 
                 print(f"DEBUG: 临时模型文件 = {tmp_model_path}")
 
-                # 加载临时模型文件
-                classifier = torch.jit.load(tmp_model_path)
+                # 加载临时模型文件到 CPU
+                classifier = torch.jit.load(tmp_model_path, map_location='cpu')
                 classifier.eval()
 
                 # 删除临时文件
@@ -291,7 +311,7 @@ def lazy_load_classifier():
                 except:
                     pass
 
-                print("✓ 加密模型加载完成")
+                print(f"✓ 加密模型加载完成 (设备: cpu)")
             except Exception as e:
                 print(f"❌ 加密模型加载失败: {e}")
                 import traceback
@@ -299,18 +319,18 @@ def lazy_load_classifier():
                 # 回退到未加密模型
                 if os.path.exists(PYTORCH_CLASSIFICATION_MODEL_PATH):
                     print("尝试加载未加密模型...")
-                    classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
+                    classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH, map_location='cpu')
                     classifier.eval()
-                    print("✓ 未加密模型加载完成")
+                    print(f"✓ 未加密模型加载完成 (设备: cpu)")
                 else:
                     raise RuntimeError("无法加载模型：加密模型解密失败且未找到未加密模型")
         else:
             # 加载未加密模型
             print("未找到加密模型，尝试加载未加密模型...")
             if os.path.exists(PYTORCH_CLASSIFICATION_MODEL_PATH):
-                classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH)
+                classifier = torch.jit.load(PYTORCH_CLASSIFICATION_MODEL_PATH, map_location='cpu')
                 classifier.eval()
-                print("✓ 未加密模型加载完成")
+                print(f"✓ 未加密模型加载完成 (设备: cpu)")
             else:
                 raise RuntimeError(f"未找到模型文件: {PYTORCH_CLASSIFICATION_MODEL_PATH}")
 
@@ -398,27 +418,65 @@ def extract_gps_from_exif_exiftool(image_path):
     使用ExifTool从图像EXIF数据中提取GPS坐标（更强大、更可靠）
     返回: (latitude, longitude, location_info) 或 (None, None, None)
     """
-    try:
-        with exiftool.ExifToolHelper(executable=EXIFTOOL_PATH) as et:
-            metadata = et.get_metadata(image_path)
+    import threading
+    import queue
 
-            if not metadata or len(metadata) == 0:
-                return None, None, "无EXIF数据"
+    result_queue = queue.Queue()
+    exception_queue = queue.Queue()
 
-            data = metadata[0]
+    def _exiftool_worker():
+        """ExifTool工作线程"""
+        try:
+            print(f"DEBUG: ExifTool路径: {EXIFTOOL_PATH}")
+            print(f"DEBUG: ExifTool存在? {os.path.exists(EXIFTOOL_PATH)}")
+            print(f"DEBUG: 开始创建ExifToolHelper...")
+            with exiftool.ExifToolHelper(executable=EXIFTOOL_PATH) as et:
+                print(f"DEBUG: ExifToolHelper创建成功，开始读取元数据...")
+                metadata = et.get_metadata(image_path)
+                print(f"DEBUG: 元数据读取完成")
 
-            # ExifTool提供已计算好的GPS坐标
-            lat = data.get('Composite:GPSLatitude')
-            lon = data.get('Composite:GPSLongitude')
+                if not metadata or len(metadata) == 0:
+                    result_queue.put((None, None, "无EXIF数据"))
+                    return
 
-            if lat is not None and lon is not None:
-                location_info = f"GPS: {lat:.6f}, {lon:.6f} (ExifTool)"
-                return lat, lon, location_info
-            else:
-                return None, None, "无GPS数据"
+                data = metadata[0]
 
-    except Exception as e:
+                # ExifTool提供已计算好的GPS坐标
+                lat = data.get('Composite:GPSLatitude')
+                lon = data.get('Composite:GPSLongitude')
+
+                if lat is not None and lon is not None:
+                    location_info = f"GPS: {lat:.6f}, {lon:.6f} (ExifTool)"
+                    result_queue.put((lat, lon, location_info))
+                else:
+                    result_queue.put((None, None, "无GPS数据"))
+
+        except Exception as e:
+            exception_queue.put(e)
+
+    # 启动工作线程
+    worker_thread = threading.Thread(target=_exiftool_worker, daemon=True)
+    worker_thread.start()
+
+    # 等待结果，最多5秒
+    worker_thread.join(timeout=5.0)
+
+    if worker_thread.is_alive():
+        # 超时了，线程还在运行
+        print("DEBUG: ExifTool超时（5秒），使用PIL fallback")
+        return None, None, "ExifTool超时"
+
+    # 检查是否有异常
+    if not exception_queue.empty():
+        e = exception_queue.get()
+        print(f"DEBUG: ExifTool异常: {e}")
         return None, None, f"ExifTool GPS解析失败: {e}"
+
+    # 检查是否有结果
+    if not result_queue.empty():
+        return result_queue.get()
+
+    return None, None, "ExifTool无响应"
 
 def extract_gps_from_exif_pil(image_path):
     """
@@ -493,9 +551,10 @@ def extract_gps_from_exif(image_path):
         if lat is not None and lon is not None:
             return lat, lon, info
         # ExifTool失败，尝试PIL fallback
-        # print(f"ExifTool读取失败({info})，尝试PIL...")
+        print(f"DEBUG: ExifTool读取失败({info})，使用PIL fallback...")
 
     # 使用PIL fallback
+    print("DEBUG: 使用PIL读取GPS...")
     return extract_gps_from_exif_pil(image_path)
 
 def write_bird_name_to_exif(image_path, bird_name):
@@ -922,8 +981,8 @@ def test_single_resize_method(model, processed_image, bird_data, method_name):
     
     normalized_array = (bgr_array / 255.0 - mean) / std
     input_tensor = torch.from_numpy(normalized_array).permute(2, 0, 1).unsqueeze(0).float()
-    
-    # 推理
+
+    # 推理（模型和输入都在 CPU 上）
     with torch.no_grad():
         output = model(input_tensor)
 
