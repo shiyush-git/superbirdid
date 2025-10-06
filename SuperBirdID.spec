@@ -4,21 +4,21 @@
 a = Analysis(
     ['SuperBirdID_GUI.py'],
     pathex=[],
-    binaries=[],
+    binaries=[
+        ('exiftool', 'exiftool'),  # ExifTool二进制文件
+    ],
     datas=[
         ('icon.png', '.'),
         ('icon.icns', '.'),
-        ('birdid2024.pt', '.'),
+        ('birdid2024.pt.enc', '.'),  # 加密模型
+        ('birdid2024.pt', '.'),  # 未加密模型（用于测试）
         ('yolo11x.pt', '.'),
         ('bird_reference.sqlite', '.'),
-        ('birdinfo.json', '.'),
-        ('cindex.json', '.'),
-        ('eindex.json', '.'),
-        ('endemic.json', '.'),
+        ('birdinfo.json', '.'),  # 保留作为备用
         ('labelmap.csv', '.'),
         ('scmapping.json', '.'),
         ('offline_ebird_data', 'offline_ebird_data'),
-        ('ebird_cache', 'ebird_cache'),
+        ('SuperBirdIDPlugin.lrplugin', 'Plugins/SuperBirdIDPlugin.lrplugin'),  # Lightroom插件
     ],
     hiddenimports=[],
     hookspath=[],
@@ -43,7 +43,7 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch=None,
+    target_arch='arm64',  # Apple Silicon (Intel 用户可通过 Rosetta 2 运行)
     codesign_identity=None,
     entitlements_file=None,
     icon=['icon.icns'],
