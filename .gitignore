@@ -23,6 +23,9 @@ build/
 *.h5
 *.pb
 
+# YOLO 模型（过大，不提交到 GitHub）
+yolo11*.pt
+
 # 数据文件（但保留项目必需的数据库）
 # *.sqlite  # 注释掉，因为 bird_reference.sqlite 需要打包
 *.db
