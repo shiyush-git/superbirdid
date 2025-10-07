@@ -65,7 +65,16 @@
       "Bash(then echo \"✓ 找到: /Applications/$f\")",
       "Bash(else echo \"✗ 缺失: /Applications/$f\")",
       "Bash(fi)",
-      "Bash(./create_dmg_cn.sh:*)"
+      "Bash(./create_dmg_cn.sh:*)",
+      "Bash(./exiftool -ver)",
+      "Bash(/opt/homebrew/bin/exiftool -ver)",
+      "Bash(brew list:*)",
+      "Bash(brew info:*)",
+      "Bash(cat:*)",
+      "Bash(tar:*)",
+      "Bash(./exiftool_bundle/run_exiftool.sh:*)",
+      "Read(//Users/xuejiaowu/Documents/SuperBirdID_File/**)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

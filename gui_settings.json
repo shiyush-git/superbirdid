@@ -1,0 +1,7 @@
+{
+  "use_yolo": true,
+  "use_gps": true,
+  "use_ebird": true,
+  "selected_country": "澳大利亚 (AU)",
+  "temperature": 0.5
+}
