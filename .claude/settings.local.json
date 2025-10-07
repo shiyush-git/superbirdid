@@ -77,7 +77,9 @@
       "Bash(tar:*)",
       "Bash(./exiftool_bundle/run_exiftool.sh:*)",
       "Read(//Users/xuejiaowu/Documents/SuperBirdID_File/**)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "WebFetch(domain:ebird.org)",
+      "WebFetch(domain:docs.ultralytics.com)"
     ],
     "deny": [],
     "ask": []

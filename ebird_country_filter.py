@@ -673,8 +673,62 @@ class eBirdCountryFilter:
         
         return filtered_results
     
+    def get_all_countries(self) -> Optional[List[Dict[str, str]]]:
+        """
+        从eBird API获取全球所有国家/地区列表
+
+        Returns:
+            国家列表 [{'code': 'AU', 'name': 'Australia'}, ...]
+        """
+        url = f"{self.base_url}/ref/region/list/country/world"
+
+        try:
+            print("正在获取全球国家列表...")
+            response = requests.get(url, headers=self.headers, timeout=30)
+
+            if response.status_code == 200:
+                countries = response.json()
+                print(f"✓ 获取成功: {len(countries)} 个国家/地区")
+                return countries
+            else:
+                print(f"⚠️ 获取失败: HTTP {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"⚠️ 请求失败: {e}")
+            return None
+
+    def get_subnational_regions(self, country_code: str) -> Optional[List[Dict[str, str]]]:
+        """
+        获取指定国家的二级区域列表（州/省）
+
+        Args:
+            country_code: 国家代码（如 'AU', 'CN', 'US'）
+
+        Returns:
+            区域列表 [{'code': 'AU-NSW', 'name': 'New South Wales'}, ...]
+        """
+        url = f"{self.base_url}/ref/region/list/subnational1/{country_code}"
+
+        try:
+            print(f"正在获取 {country_code} 的二级区域列表...")
+            response = requests.get(url, headers=self.headers, timeout=30)
+
+            if response.status_code == 200:
+                regions = response.json()
+                print(f"✓ 获取成功: {len(regions)} 个区域")
+                return regions
+            elif response.status_code == 404:
+                print(f"⚠️ {country_code} 没有二级区域数据")
+                return []
+            else:
+                print(f"⚠️ 获取失败: HTTP {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"⚠️ 请求失败: {e}")
+            return None
+
     def get_supported_countries(self) -> Dict[str, str]:
-        """获取支持的国家列表"""
+        """获取支持的国家列表（已弃用，建议使用 get_all_countries）"""
         return self.country_codes.copy()
     
     def clear_cache(self, country_code: str = None) -> None:
