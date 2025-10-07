@@ -12,7 +12,7 @@ a = Analysis(
         ('icon.icns', '.'),
         ('birdid2024.pt.enc', '.'),  # 加密模型
         ('birdid2024.pt', '.'),  # 未加密模型（用于测试）
-        ('yolo11x.pt', '.'),
+        ('yolo11l.pt', '.'),  # YOLO11-Large 检测模型
         ('bird_reference.sqlite', '.'),
         ('birdinfo.json', '.'),  # 保留作为备用
         ('labelmap.csv', '.'),

@@ -25,7 +25,7 @@
 
 ### 鸟类识别
 - ✓ 加密模型保护 (birdid2024.pt.enc)
-- ✓ YOLO 鸟类检测 (yolo11x.pt)
+- ✓ YOLO 鸟类检测 (yolo11l.pt)
 - ✓ 支持格式: JPG, PNG, TIFF, RAW
 - ✓ 剪贴板粘贴支持
 
@@ -59,7 +59,7 @@
 
 ### 核心资源
 - `birdid2024.pt.enc` - 加密识别模型 (22 MB)
-- `yolo11x.pt` - YOLO检测模型 (109 MB)
+- `yolo11l.pt` - YOLO检测模型 (49 MB)
 - `bird_reference.sqlite` - 鸟类数据库 (54 MB)
 - `birdinfo.json` - 鸟类信息 (1 MB)
 - `labelmap.csv` - 标签映射 (263 KB)
