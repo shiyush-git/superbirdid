@@ -4,7 +4,6 @@ from PIL import Image, ImageEnhance, ImageFilter
 from PIL.ExifTags import TAGS, GPSTAGS
 import json
 import cv2
-import csv
 import os
 import sys
 
@@ -216,13 +215,11 @@ GEOGRAPHIC_REGIONS = {
 # --- 加载模型和数据 ---
 PYTORCH_CLASSIFICATION_MODEL_PATH = os.path.join(script_dir, 'birdid2024.pt')
 BIRD_INFO_PATH = os.path.join(script_dir, 'birdinfo.json')
-LABELMAP_PATH = os.path.join(script_dir, 'labelmap.csv')
 
 # 全局变量 - 使用懒加载
 classifier = None
 db_manager = None
 bird_info = None
-labelmap_data = None
 
 def decrypt_model(encrypted_path: str, password: str) -> bytes:
     """解密模型文件并返回解密后的数据"""
@@ -369,34 +366,13 @@ def lazy_load_database():
             db_manager = False  # 标记为已尝试但失败
     return db_manager if db_manager is not False else None
 
-def lazy_load_labelmap():
-    """懒加载标签映射"""
-    global labelmap_data
-    if labelmap_data is None:
-        labelmap_data = {}
-        if os.path.exists(LABELMAP_PATH):
-            with open(LABELMAP_PATH, 'r', encoding='utf-8') as f:
-                csv_reader = csv.reader(f)
-                for row in csv_reader:
-                    if len(row) >= 2:
-                        try:
-                            class_id = int(row[0])
-                            name = row[1]
-                            labelmap_data[class_id] = name
-                        except ValueError:
-                            continue
-            print(f"✓ 标签映射加载完成: {len(labelmap_data)} 条目")
-        else:
-            print("⚠ 标签映射文件未找到")
-    return labelmap_data
 
 # 验证关键文件是否存在
 def verify_files():
     """快速验证关键文件"""
     required_files = [
         PYTORCH_CLASSIFICATION_MODEL_PATH,
-        BIRD_INFO_PATH,
-        LABELMAP_PATH
+        BIRD_INFO_PATH
     ]
 
     missing_files = []

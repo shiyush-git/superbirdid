@@ -62,8 +62,6 @@
 - `yolo11l.pt` - YOLO检测模型 (49 MB)
 - `bird_reference.sqlite` - 鸟类数据库 (54 MB)
 - `birdinfo.json` - 鸟类信息 (1 MB)
-- `labelmap.csv` - 标签映射 (263 KB)
-- `scmapping.json` - 中英文映射 (78 KB)
 - `exiftool` - EXIF工具 (330 KB)
 
 ### 离线数据

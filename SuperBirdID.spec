@@ -15,8 +15,6 @@ a = Analysis(
         ('yolo11l.pt', '.'),  # YOLO11-Large 检测模型
         ('bird_reference.sqlite', '.'),
         ('birdinfo.json', '.'),  # 保留作为备用
-        ('labelmap.csv', '.'),
-        ('scmapping.json', '.'),
         ('offline_ebird_data', 'offline_ebird_data'),
         ('SuperBirdIDPlugin.lrplugin', 'Plugins/SuperBirdIDPlugin.lrplugin'),  # Lightroom插件
     ],
