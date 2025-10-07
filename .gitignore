@@ -16,17 +16,17 @@ build/
 .AppleDouble
 .LSOverride
 
-# 模型文件
-*.pt
+# 模型文件（但保留项目必需的模型）
+# *.pt  # 注释掉，因为 yolo11x.pt 和 birdid2024.pt 需要打包
 *.pth
 *.onnx
 *.h5
 *.pb
 
-# 数据文件
-*.sqlite
+# 数据文件（但保留项目必需的数据库）
+# *.sqlite  # 注释掉，因为 bird_reference.sqlite 需要打包
 *.db
-offline_ebird_data/
+# offline_ebird_data/  # 注释掉，需要打包
 
 # 临时文件
 *.tmp
