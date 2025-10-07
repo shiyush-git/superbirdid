@@ -46,3 +46,15 @@ test_*.jpg
 test_*.png
 cropped_*.jpg
 thumb.jpg
+
+# 发布文件（体积大，不提交到 git）
+*.dmg
+*.pkg
+*.app
+release/*.dmg
+release/*.pkg
+release/README-v*.md
+release/README.md
+
+# 打包临时文件
+temp_dmg/
