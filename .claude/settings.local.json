@@ -79,7 +79,8 @@
       "Read(//Users/xuejiaowu/Documents/SuperBirdID_File/**)",
       "Bash(git checkout:*)",
       "WebFetch(domain:ebird.org)",
-      "WebFetch(domain:docs.ultralytics.com)"
+      "WebFetch(domain:docs.ultralytics.com)",
+      "Bash(FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch yolo11x.pt yolo11l.pt' --prune-empty --tag-name-filter cat -- --all)"
     ],
     "deny": [],
     "ask": []
