@@ -65,7 +65,8 @@
       "Bash(then echo \"✓ 找到: /Applications/$f\")",
       "Bash(else echo \"✗ 缺失: /Applications/$f\")",
       "Bash(fi)",
-      "Bash(./create_dmg_cn.sh:*)"
+      "Bash(./create_dmg_cn.sh:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
