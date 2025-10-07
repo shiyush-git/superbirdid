@@ -195,9 +195,12 @@ class SuperBirdIDGUI:
         self.api_port = 5156
         self.show_advanced = tk.BooleanVar(value=False)
 
-        # 国家选择
+        # 国家和区域选择
         self.selected_country = tk.StringVar(value=saved_settings.get('selected_country', "自动检测"))
+        self.selected_region = tk.StringVar(value=saved_settings.get('selected_region', "整个国家"))
         self.country_list = self.load_available_countries()
+        self.regions_data_cache = self.load_regions_data()  # 缓存区域数据
+        self.current_region_list = []  # 当前选中国家的区域列表
 
         # 温度参数选择
         self.temperature = tk.DoubleVar(value=saved_settings.get('temperature', 0.5))
@@ -257,42 +260,50 @@ class SuperBirdIDGUI:
         # Escape - 切换高级选项
         self.root.bind('<Escape>', lambda e: self.toggle_advanced())
 
+    def load_regions_data(self):
+        """加载 eBird 区域数据（国家和二级区域列表）"""
+        try:
+            regions_file = os.path.join(script_dir, "ebird_regions.json")
+            if os.path.exists(regions_file):
+                with open(regions_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            print(f"加载区域数据失败: {e}")
+        return None
+
     def load_available_countries(self):
-        """加载可用的国家列表"""
+        """加载可用的国家列表（从 ebird_regions.json）"""
         countries = {"自动检测": None, "全球模式": None}
 
+        # 国家代码到中文名称的映射
+        country_names = {
+            'AU': '澳大利亚', 'CN': '中国', 'US': '美国', 'CA': '加拿大',
+            'BR': '巴西', 'IN': '印度', 'ID': '印度尼西亚', 'MX': '墨西哥',
+            'CO': '哥伦比亚', 'PE': '秘鲁', 'EC': '厄瓜多尔', 'BO': '玻利维亚',
+            'VE': '委内瑞拉', 'CL': '智利', 'AR': '阿根廷', 'ZA': '南非',
+            'KE': '肯尼亚', 'TZ': '坦桑尼亚', 'MG': '马达加斯加', 'CM': '喀麦隆',
+            'GH': '加纳', 'NG': '尼日利亚', 'ET': '埃塞俄比亚', 'UG': '乌干达',
+            'CR': '哥斯达黎加', 'PA': '巴拿马', 'GT': '危地马拉', 'NI': '尼加拉瓜',
+            'HN': '洪都拉斯', 'BZ': '伯利兹', 'SV': '萨尔瓦多', 'NO': '挪威',
+            'SE': '瑞典', 'FI': '芬兰', 'GB': '英国', 'FR': '法国',
+            'ES': '西班牙', 'IT': '意大利', 'DE': '德国', 'PL': '波兰',
+            'RO': '罗马尼亚', 'TR': '土耳其', 'RU': '俄罗斯', 'JP': '日本',
+            'KR': '韩国', 'TH': '泰国', 'VN': '越南', 'PH': '菲律宾',
+            'MY': '马来西亚', 'SG': '新加坡', 'NZ': '新西兰'
+        }
+
         try:
-            offline_index_path = os.path.join(script_dir, "offline_ebird_data", "offline_index.json")
-            if os.path.exists(offline_index_path):
-                with open(offline_index_path, 'r', encoding='utf-8') as f:
-                    offline_index = json.load(f)
-                    available_countries = offline_index.get('countries', {})
-
-                # 国家代码到中文名称的映射
-                country_names = {
-                    'AU': '澳大利亚', 'CN': '中国', 'US': '美国', 'CA': '加拿大',
-                    'BR': '巴西', 'IN': '印度', 'ID': '印度尼西亚', 'MX': '墨西哥',
-                    'CO': '哥伦比亚', 'PE': '秘鲁', 'EC': '厄瓜多尔', 'BO': '玻利维亚',
-                    'VE': '委内瑞拉', 'CL': '智利', 'AR': '阿根廷', 'ZA': '南非',
-                    'KE': '肯尼亚', 'TZ': '坦桑尼亚', 'MG': '马达加斯加', 'CM': '喀麦隆',
-                    'GH': '加纳', 'NG': '尼日利亚', 'ET': '埃塞俄比亚', 'UG': '乌干达',
-                    'CR': '哥斯达黎加', 'PA': '巴拿马', 'GT': '危地马拉', 'NI': '尼加拉瓜',
-                    'HN': '洪都拉斯', 'BZ': '伯利兹', 'SV': '萨尔瓦多', 'NO': '挪威',
-                    'SE': '瑞典', 'FI': '芬兰', 'GB': '英国', 'FR': '法国',
-                    'ES': '西班牙', 'IT': '意大利', 'DE': '德国', 'PL': '波兰',
-                    'RO': '罗马尼亚', 'TR': '土耳其', 'RU': '俄罗斯', 'JP': '日本',
-                    'KR': '韩国', 'TH': '泰国', 'VN': '越南', 'PH': '菲律宾',
-                    'MY': '马来西亚', 'SG': '新加坡', 'NZ': '新西兰'
-                }
-
-                # 添加所有可用国家
-                for code, data in sorted(available_countries.items()):
-                    cn_name = country_names.get(code, code)
+            regions_data = self.load_regions_data()
+            if regions_data and 'countries' in regions_data:
+                # 从 ebird_regions.json 读取国家列表
+                for country in regions_data['countries']:
+                    code = country['code']
+                    name = country['name']
+                    cn_name = country_names.get(code, name)
                     display_name = f"{cn_name} ({code})"
                     countries[display_name] = code
-
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"加载国家列表失败: {e}")
 
         return countries
 
@@ -313,6 +324,7 @@ class SuperBirdIDGUI:
             'use_gps': self.use_gps.get(),
             'use_ebird': self.use_ebird.get(),
             'selected_country': self.selected_country.get(),
+            'selected_region': self.selected_region.get(),
             'temperature': self.temperature.get()
         }
         try:
@@ -320,6 +332,100 @@ class SuperBirdIDGUI:
                 json.dump(settings, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"保存设置失败: {e}")
+
+    def on_country_changed(self, event=None):
+        """当用户选择国家时，更新区域列表"""
+        selected_country_display = self.selected_country.get()
+
+        # 如果选择的是"自动检测"或"全球模式"，区域菜单显示"整个国家"
+        if selected_country_display in ["自动检测", "全球模式"]:
+            self.region_menu['values'] = ["整个国家"]
+            self.region_menu.set("整个国家")
+            return
+
+        # 从显示名称中提取国家代码，格式: "澳大利亚 (AU)"
+        country_code = self.country_list.get(selected_country_display)
+        if not country_code:
+            self.region_menu['values'] = ["整个国家"]
+            self.region_menu.set("整个国家")
+            return
+
+        # 从缓存的区域数据中查找该国家的区域列表
+        if self.regions_data_cache and 'countries' in self.regions_data_cache:
+            for country in self.regions_data_cache['countries']:
+                if country['code'] == country_code:
+                    if country['has_regions'] and len(country['regions']) > 0:
+                        # 有二级区域，构建区域列表
+                        region_options = ["整个国家"]  # 第一个选项总是"整个国家"
+                        for region in country['regions']:
+                            region_options.append(f"{region['name']} ({region['code']})")
+
+                        self.region_menu['values'] = region_options
+                        self.region_menu.set("整个国家")
+                        print(f"已加载 {country_code} 的 {len(country['regions'])} 个区域")
+                    else:
+                        # 没有二级区域
+                        self.region_menu['values'] = ["整个国家"]
+                        self.region_menu.set("整个国家")
+                        print(f"{country_code} 没有二级区域")
+                    return
+
+        # 如果没找到，显示"整个国家"
+        self.region_menu['values'] = ["整个国家"]
+        self.region_menu.set("整个国家")
+
+    def on_region_changed(self, event=None):
+        """当用户选择区域时，下载该区域的物种数据"""
+        selected_region_display = self.selected_region.get()
+        selected_country_display = self.selected_country.get()
+
+        # 确定要下载的区域代码
+        region_code = None
+
+        if selected_region_display == "整个国家":
+            # 使用国家代码
+            region_code = self.country_list.get(selected_country_display)
+        else:
+            # 从 "South Australia (AU-SA)" 提取 AU-SA
+            import re
+            match = re.search(r'\(([A-Z]{2}-[A-Z]+)\)', selected_region_display)
+            if match:
+                region_code = match.group(1)
+
+        if not region_code or region_code in [None, "自动检测", "全球模式"]:
+            print("未选择有效的国家/区域")
+            return
+
+        # 在后台线程中下载物种数据
+        import threading
+        def download_species_data():
+            try:
+                self.update_status(f"正在下载 {region_code} 的鸟类物种数据...")
+
+                # 使用 eBird API 下载物种数据
+                if EBIRD_FILTER_AVAILABLE:
+                    from ebird_country_filter import eBirdCountryFilter
+                    import os as os_module
+                    api_key = os_module.environ.get('EBIRD_API_KEY', '60nan25sogpo')
+                    filter_system = eBirdCountryFilter(api_key)
+
+                    species_set = filter_system.get_country_species_list(region_code)
+
+                    if species_set:
+                        self.update_status(f"✓ 已下载 {region_code} 的 {len(species_set)} 个物种")
+                        print(f"✓ 物种数据已缓存: {region_code} ({len(species_set)} 个物种)")
+                    else:
+                        self.update_status(f"⚠️ 下载 {region_code} 物种数据失败")
+                else:
+                    self.update_status("⚠️ eBird 过滤模块不可用")
+
+            except Exception as e:
+                self.update_status(f"❌ 下载失败: {e}")
+                print(f"下载物种数据失败: {e}")
+
+        # 启动下载线程
+        download_thread = threading.Thread(target=download_species_data, daemon=True)
+        download_thread.start()
 
     def setup_fonts(self):
         """设置字体"""
@@ -1044,14 +1150,36 @@ class SuperBirdIDGUI:
             country_label.pack(side=tk.LEFT, padx=(0, 10))
 
             # 下拉菜单
-            country_menu = ttk.Combobox(country_select_frame,
+            self.country_menu = ttk.Combobox(country_select_frame,
                                        textvariable=self.selected_country,
                                        values=list(self.country_list.keys()),
                                        state='readonly',
                                        width=30,
                                        font=self.fonts['small'])
-            country_menu.pack(side=tk.LEFT)
-            country_menu.set("自动检测")
+            self.country_menu.pack(side=tk.LEFT)
+            self.country_menu.set("自动检测")
+            self.country_menu.bind('<<ComboboxSelected>>', self.on_country_changed)
+
+            # 区域选择下拉菜单
+            region_select_frame = tk.Frame(ebird_frame, bg=self.colors['card'])
+            region_select_frame.pack(fill=tk.X, padx=20, pady=(10, 0))
+
+            region_label = tk.Label(region_select_frame,
+                                   text="选择区域:",
+                                   font=self.fonts['small'],
+                                   fg=self.colors['text'],
+                                   bg=self.colors['card'])
+            region_label.pack(side=tk.LEFT, padx=(0, 10))
+
+            self.region_menu = ttk.Combobox(region_select_frame,
+                                           textvariable=self.selected_region,
+                                           values=["整个国家"],
+                                           state='readonly',
+                                           width=30,
+                                           font=self.fonts['small'])
+            self.region_menu.pack(side=tk.LEFT)
+            self.region_menu.set("整个国家")
+            self.region_menu.bind('<<ComboboxSelected>>', self.on_region_changed)
 
         # 温度参数设置
         temp_frame = tk.Frame(content, bg=self.colors['card'])
@@ -1401,7 +1529,10 @@ class SuperBirdIDGUI:
             self.progress_queue.put(("progress", "📚 加载鸟类数据库..."))
             bird_info = lazy_load_bird_info()
             db_manager = lazy_load_database()
-            print("DEBUG: 数据库加载完成")
+            if db_manager:
+                print(f"DEBUG: 数据库加载完成 - db_manager类型={type(db_manager).__name__}")
+            else:
+                print("DEBUG: 数据库加载失败 - db_manager=None")
 
             self.progress_queue.put(("progress", "🔬 智能分析图片特征..."))
 
@@ -1452,55 +1583,92 @@ class SuperBirdIDGUI:
                     # data_source将在识别结果之前发送，这里不需要重复发送
 
             # eBird过滤设置
+            print(f"\nDEBUG eBird过滤: 启用={self.use_ebird.get()}, 模块可用={EBIRD_FILTER_AVAILABLE}")
             if self.use_ebird.get() and EBIRD_FILTER_AVAILABLE:
                 try:
+                    # 初始化 eBird 过滤器（用于回退机制）
+                    EBIRD_API_KEY = os.environ.get('EBIRD_API_KEY', '60nan25sogpo')
+                    cache_dir = os.path.join(get_user_data_dir(), 'ebird_cache')
+                    offline_dir = get_resource_path("offline_ebird_data")
+                    ebird_filter = eBirdCountryFilter(EBIRD_API_KEY, cache_dir=cache_dir, offline_dir=offline_dir)
+
                     # 优先使用GPS精确位置数据，其次使用国家数据
                     if gps_location_species:
                         # 使用GPS位置的25km范围数据（最精确）
                         ebird_species_set = gps_location_species
+                        print(f"DEBUG eBird过滤: 使用GPS位置数据，物种数={len(ebird_species_set)}")
                         self.progress_queue.put(("progress", f"✅ 使用GPS位置数据 ({len(ebird_species_set)} 种鸟类)"))
                         # ebird_data_source 已在前面设置
                     else:
-                        # 没有GPS数据，回退到国家级别数据
+                        # 没有GPS数据，使用用户选择的国家/区域
                         selected = self.selected_country.get()
+                        selected_region_display = self.selected_region.get()
+                        print(f"DEBUG eBird过滤: 用户选择国家='{selected}', 区域='{selected_region_display}'")
+
+                        # 确定要使用的区域代码
+                        region_code = None
 
                         # 如果是"自动检测"且有GPS，使用GPS国家代码
                         if selected == "自动检测":
                             if country_code:
-                                pass  # 使用GPS检测到的country_code
+                                print(f"DEBUG eBird过滤: 自动检测模式，使用GPS国家代码={country_code}")
+                                region_code = country_code
                             else:
-                                country_code = None  # 没有GPS，不使用过滤
+                                print(f"DEBUG eBird过滤: 自动检测模式，无GPS，不使用过滤")
+                                region_code = None
                                 ebird_data_source = "全球模式（未检测到GPS）"
                         # 如果是"全球模式"，不使用过滤
                         elif selected == "全球模式":
-                            country_code = None
+                            print(f"DEBUG eBird过滤: 全球模式，不使用过滤")
+                            region_code = None
                             ebird_data_source = "全球模式"
-                        # 否则使用用户选择的国家
+                        # 否则使用用户选择的国家/区域
                         else:
-                            country_code = self.country_list.get(selected)
+                            # 检查是否选择了具体区域
+                            if selected_region_display and selected_region_display != "整个国家":
+                                # 从 "South Australia (AU-SA)" 提取 AU-SA
+                                import re
+                                match = re.search(r'\(([A-Z]{2}-[A-Z]+)\)', selected_region_display)
+                                if match:
+                                    region_code = match.group(1)
+                                    print(f"DEBUG eBird过滤: 用户选择区域，区域代码={region_code}")
+                                else:
+                                    region_code = self.country_list.get(selected)
+                                    print(f"DEBUG eBird过滤: 无法解析区域代码，使用国家代码={region_code}")
+                            else:
+                                # 使用整个国家
+                                region_code = self.country_list.get(selected)
+                                print(f"DEBUG eBird过滤: 用户选择整个国家，国家代码={region_code}")
 
-                        # 如果有国家代码，加载eBird数据
-                        if country_code:
+                        # 如果有区域代码，加载eBird数据
+                        if region_code:
+                            country_code = region_code  # 兼容后续代码
                             self.progress_queue.put(("progress", f"🌍 加载 {country_code} 国家级鸟类数据库..."))
+                            print(f"DEBUG eBird过滤: 开始加载国家数据，country_code={country_code}")
 
-                            # eBird API密钥（优先使用环境变量，否则使用默认值）
-                            EBIRD_API_KEY = os.environ.get('EBIRD_API_KEY', '60nan25sogpo')
-                            cache_dir = os.path.join(get_user_data_dir(), 'ebird_cache')
-                            offline_dir = get_resource_path("offline_ebird_data")
-                            ebird_filter = eBirdCountryFilter(EBIRD_API_KEY, cache_dir=cache_dir, offline_dir=offline_dir)
+                            # 使用已创建的 ebird_filter 加载物种数据
                             ebird_species_set = ebird_filter.get_country_species_list(country_code)
 
                             if ebird_species_set:
+                                print(f"DEBUG eBird过滤: 成功加载国家数据，物种数={len(ebird_species_set)}")
+                                print(f"DEBUG eBird过滤: 前5个eBird代码: {list(ebird_species_set)[:5]}")
                                 self.progress_queue.put(("progress", f"✅ 数据库加载完成 ({len(ebird_species_set)} 种鸟类)"))
                                 ebird_data_source = f"国家{country_code}数据"
                             else:
+                                print(f"DEBUG eBird过滤: 加载国家数据失败")
                                 ebird_data_source = "全球模式（国家数据加载失败）"
+                        else:
+                            print(f"DEBUG eBird过滤: country_code为空，不使用过滤")
                 except Exception as e:
+                    print(f"DEBUG eBird过滤: 异常 - {e}")
                     self.progress_queue.put(("progress", f"⚠️ 地区数据加载失败，使用全球数据库"))
                     ebird_data_source = "全球模式（加载异常）"
             else:
+                print(f"DEBUG eBird过滤: 未启用或模块不可用")
                 # 未启用eBird筛选
                 ebird_data_source = "全球模式（未启用地理筛选）"
+
+            print(f"DEBUG eBird过滤: 最终 ebird_species_set={'有数据' if ebird_species_set else '无'}, 数量={len(ebird_species_set) if ebird_species_set else 0}")
 
             # YOLO检测
             processed_image = self.current_image
@@ -1596,12 +1764,20 @@ class SuperBirdIDGUI:
                         ebird_code = None
                         if db_manager:
                             ebird_code = db_manager.get_ebird_code_by_english_name(en_name)
+                            print(f"DEBUG 过滤: 英文名='{en_name}' -> eBird代码='{ebird_code}'")
+                        else:
+                            print(f"DEBUG 过滤: 数据库不可用，无法获取eBird代码 (英文名='{en_name}')")
 
                         # 检查是否在eBird列表中
                         if ebird_code and ebird_code in ebird_species_set:
                             ebird_match = True
+                            print(f"DEBUG 过滤: ✓ '{en_name}' ({ebird_code}) 在过滤列表中，保留")
                         else:
                             filtered_by_ebird = True
+                            if ebird_code:
+                                print(f"DEBUG 过滤: ✗ '{en_name}' ({ebird_code}) 不在过滤列表中，过滤掉")
+                            else:
+                                print(f"DEBUG 过滤: ✗ '{en_name}' 无eBird代码，过滤掉")
 
                     # 只有在没有被eBird过滤的情况下才加入结果
                     if not filtered_by_ebird:
@@ -1626,22 +1802,91 @@ class SuperBirdIDGUI:
                                 'confidence': conf
                             })
 
-            # 如果eBird过滤导致结果为空，显示提示并使用原始结果
+            # 如果eBird过滤导致结果为空，尝试多级回退
             if ebird_species_set and len(results) == 0 and len(filtered_results) > 0:
-                self.progress_queue.put(("warning",
-                    f"⚠️ 地理筛选过于严格，未找到匹配结果\n"
-                    f"最可能的识别结果（{filtered_results[0]['cn_name']}）不在当前地区数据库中\n"
-                    f"建议：关闭地理筛选或切换到\"全球模式\""))
+                print(f"DEBUG 过滤: 所有结果都被过滤，被过滤的结果数={len(filtered_results)}")
+                print(f"DEBUG 过滤: 当前过滤列表物种数={len(ebird_species_set)}")
 
-                # 使用被过滤的前3个结果，但标记为非eBird匹配
-                for i, r in enumerate(filtered_results[:3]):
-                    results.append({
-                        'rank': i + 1,
-                        'cn_name': r['cn_name'],
-                        'en_name': r['en_name'],
-                        'confidence': r['confidence'],
-                        'ebird_match': False
-                    })
+                # 尝试回退策略：GPS 25km → 区域 → 国家
+                fallback_species_set = None
+                fallback_source = None
+
+                # 如果当前使用的是GPS位置数据（25km，物种少）
+                if gps_location_species and len(ebird_species_set) < 200:
+                    print(f"DEBUG 过滤回退: 当前使用GPS位置数据({len(ebird_species_set)}个物种)，尝试回退到区域/国家")
+
+                    # 尝试回退到GPS所在的区域
+                    if country_code:
+                        try:
+                            # 检查是否是区域代码（如 AU-SA）
+                            if '-' in country_code:
+                                # 这是区域代码，已经是区域级别，尝试回退到国家
+                                country_only = country_code.split('-')[0]
+                                print(f"DEBUG 过滤回退: 从区域 {country_code} 回退到国家 {country_only}")
+                                fallback_species_set = ebird_filter.get_country_species_list(country_only)
+                                fallback_source = f"回退到国家级数据 ({country_only})"
+                            else:
+                                # 这是国家代码，尝试获取GPS所在的具体区域
+                                region_code, _ = ebird_filter.get_region_code_from_gps(lat, lon)
+                                if region_code and region_code != country_code:
+                                    print(f"DEBUG 过滤回退: 从GPS位置 回退到区域 {region_code}")
+                                    fallback_species_set = ebird_filter.get_country_species_list(region_code)
+                                    fallback_source = f"回退到区域级数据 ({region_code})"
+                                else:
+                                    print(f"DEBUG 过滤回退: 从GPS位置 回退到国家 {country_code}")
+                                    fallback_species_set = ebird_filter.get_country_species_list(country_code)
+                                    fallback_source = f"回退到国家级数据 ({country_code})"
+                        except Exception as e:
+                            print(f"DEBUG 过滤回退失败: {e}")
+
+                # 如果回退成功，重新过滤
+                if fallback_species_set and len(fallback_species_set) > len(ebird_species_set):
+                    print(f"DEBUG 过滤回退: 成功获取回退数据，物种数={len(fallback_species_set)}")
+
+                    # 用回退的物种列表重新检查被过滤的结果
+                    for filtered_result in filtered_results[:10]:
+                        en_name = filtered_result['en_name']
+                        ebird_code = None
+
+                        if db_manager:
+                            ebird_code = db_manager.get_ebird_code_by_english_name(en_name)
+
+                        if ebird_code and ebird_code in fallback_species_set:
+                            print(f"DEBUG 过滤回退: ✓ '{en_name}' ({ebird_code}) 在回退列表中，添加")
+                            results.append({
+                                'rank': len(results) + 1,
+                                'cn_name': filtered_result['cn_name'],
+                                'en_name': filtered_result['en_name'],
+                                'confidence': filtered_result['confidence'],
+                                'ebird_match': True
+                            })
+
+                            if len(results) >= 10:
+                                break
+
+                    # 更新数据来源信息
+                    if len(results) > 0:
+                        ebird_data_source = fallback_source
+                        self.progress_queue.put(("warning",
+                            f"ℹ️ 地理筛选回退\n"
+                            f"GPS 25km范围内未找到匹配，已回退到更大范围\n"
+                            f"数据来源：{fallback_source} ({len(fallback_species_set)} 个物种)"))
+                    else:
+                        # 回退后仍然没有结果
+                        self.progress_queue.put(("warning",
+                            f"❌ 地理筛选：未找到匹配结果\n"
+                            f"AI识别的物种（{filtered_results[0]['cn_name']} {filtered_results[0]['en_name']}）不在当前地区鸟类列表中\n\n"
+                            f"建议：\n"
+                            f"• 关闭\"启用eBird地理筛选\"以查看全球识别结果\n"
+                            f"• 或切换到\"全球模式\""))
+                else:
+                    # 没有回退或回退失败
+                    self.progress_queue.put(("warning",
+                        f"❌ 地理筛选：未找到匹配结果\n"
+                        f"AI识别的物种（{filtered_results[0]['cn_name']} {filtered_results[0]['en_name']}）不在当前地区鸟类列表中\n\n"
+                        f"建议：\n"
+                        f"• 关闭\"启用eBird地理筛选\"以查看全球识别结果\n"
+                        f"• 或切换到\"全球模式\""))
 
             # 如果完全没有结果（所有置信度都低于5%）
             if len(results) == 0:

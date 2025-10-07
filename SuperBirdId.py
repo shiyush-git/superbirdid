@@ -30,8 +30,16 @@ try:
         if os.path.exists(EXIFTOOL_PATH):
             os.chmod(EXIFTOOL_PATH, 0o755)
     else:
-        # 开发环境，使用系统exiftool
-        EXIFTOOL_PATH = 'exiftool'
+        # 开发环境，使用项目内的完整 exiftool bundle
+        base_path = os.path.dirname(os.path.abspath(__file__))
+        EXIFTOOL_PATH = os.path.join(base_path, 'exiftool_bundle', 'run_exiftool.sh')
+        # 设置可执行权限
+        if os.path.exists(EXIFTOOL_PATH):
+            os.chmod(EXIFTOOL_PATH, 0o755)
+            # 同时设置 exiftool 主程序的权限
+            exiftool_main = os.path.join(base_path, 'exiftool_bundle', 'exiftool')
+            if os.path.exists(exiftool_main):
+                os.chmod(exiftool_main, 0o755)
 
 except ImportError:
     EXIFTOOL_AVAILABLE = False
@@ -63,13 +71,14 @@ except ImportError:
     EBIRD_FILTER_AVAILABLE = False
     print("警告: eBird过滤器模块未找到，将跳过国家物种过滤功能")
 
-# 尝试导入SQLite数据库管理器
+# 尝试导入SQLite数据库管理器（可选功能）
 try:
     from bird_database_manager import BirdDatabaseManager
     DATABASE_AVAILABLE = True
 except ImportError:
     DATABASE_AVAILABLE = False
-    print("警告: 数据库管理器模块未找到，将使用传统JSON文件")
+    # SQLite数据库是可选功能，没有也不影响核心功能
+    # print("ℹ️  使用JSON文件模式（SQLite数据库未启用）")
 
 # --- 获取脚本所在目录 ---
 # 支持 PyInstaller 打包环境
@@ -103,7 +112,7 @@ class YOLOBirdDetector:
             return
 
         if model_path is None:
-            model_path = os.path.join(script_dir, 'yolo11x.pt')
+            model_path = os.path.join(script_dir, 'yolo11l.pt')
 
         try:
             self.model = YOLO(model_path)
@@ -549,9 +558,15 @@ def extract_gps_from_exif(image_path):
     if EXIFTOOL_AVAILABLE:
         lat, lon, info = extract_gps_from_exif_exiftool(image_path)
         if lat is not None and lon is not None:
+            # 成功读取到GPS数据
             return lat, lon, info
-        # ExifTool失败，尝试PIL fallback
-        print(f"DEBUG: ExifTool读取失败({info})，使用PIL fallback...")
+        elif info in ["无GPS数据", "无EXIF数据"]:
+            # exiftool读取成功，但照片确实没有GPS数据，直接返回，不需要fallback
+            print(f"DEBUG: ExifTool读取完成，{info}")
+            return None, None, info
+        else:
+            # exiftool读取失败（超时、异常等），尝试PIL fallback
+            print(f"DEBUG: ExifTool读取失败({info})，使用PIL fallback...")
 
     # 使用PIL fallback
     print("DEBUG: 使用PIL读取GPS...")
