@@ -1,0 +1,7 @@
+{
+  "use_yolo": true,
+  "use_gps": true,
+  "use_ebird": true,
+  "selected_country": "自动检测",
+  "temperature": 0.4
+}
