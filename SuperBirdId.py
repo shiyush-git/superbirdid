@@ -1,3 +1,9 @@
+"""
+SuperBirdID - 高精度鸟类识别系统
+"""
+
+__version__ = "3.0.1"
+
 import torch
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter
@@ -24,21 +30,21 @@ try:
     if getattr(sys, 'frozen', False):
         # 打包后的环境（PyInstaller）
         base_path = sys._MEIPASS
-        EXIFTOOL_PATH = os.path.join(base_path, 'exiftool', 'exiftool')
+        EXIFTOOL_PATH = os.path.join(base_path, 'exiftool_bundle', 'exiftool')
         # 设置可执行权限
         if os.path.exists(EXIFTOOL_PATH):
             os.chmod(EXIFTOOL_PATH, 0o755)
+            # 同时设置 lib 目录权限，确保 Perl 模块可访问
+            lib_dir = os.path.join(base_path, 'exiftool_bundle', 'lib')
+            if os.path.exists(lib_dir):
+                os.chmod(lib_dir, 0o755)
     else:
         # 开发环境，使用项目内的完整 exiftool bundle
         base_path = os.path.dirname(os.path.abspath(__file__))
-        EXIFTOOL_PATH = os.path.join(base_path, 'exiftool_bundle', 'run_exiftool.sh')
+        EXIFTOOL_PATH = os.path.join(base_path, 'exiftool_bundle', 'exiftool')
         # 设置可执行权限
         if os.path.exists(EXIFTOOL_PATH):
             os.chmod(EXIFTOOL_PATH, 0o755)
-            # 同时设置 exiftool 主程序的权限
-            exiftool_main = os.path.join(base_path, 'exiftool_bundle', 'exiftool')
-            if os.path.exists(exiftool_main):
-                os.chmod(exiftool_main, 0o755)
 
 except ImportError:
     EXIFTOOL_AVAILABLE = False
@@ -757,40 +763,113 @@ def load_image(image_path):
 
     # 判断是否为RAW格式
     if file_ext in raw_extensions:
-        if not RAW_SUPPORT:
-            raise ImportError(
-                f"检测到RAW格式 ({file_ext})，但RAW支持库未安装。\n"
-                f"请安装: pip install rawpy imageio"
-            )
+        print(f"🔍 检测到RAW格式: {file_ext.upper()}")
+        print(f"📸 正在处理RAW文件...")
 
-        try:
-            print(f"🔍 检测到RAW格式: {file_ext.upper()}")
-            print(f"📸 正在处理RAW文件...")
+        # 策略1: 优先尝试使用ExifTool提取内嵌JPEG（适用于压缩RAW格式）
+        if EXIFTOOL_AVAILABLE:
+            try:
+                import tempfile
+                print("  方法1: 尝试从RAW中提取内嵌JPEG...")
 
-            # 使用rawpy读取RAW文件
-            with rawpy.imread(image_path) as raw:
-                # 使用默认参数处理RAW数据
-                # use_camera_wb=True: 使用相机白平衡
-                # output_bps=8: 输出8位图像
-                rgb = raw.postprocess(
-                    use_camera_wb=True,
-                    output_bps=8,
-                    no_auto_bright=False,  # 自动亮度调整
-                    auto_bright_thr=0.01   # 自动亮度阈值
+                with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp_file:
+                    tmp_jpg_path = tmp_file.name
+
+                # 尝试提取 JpgFromRaw（全分辨率JPEG）
+                import subprocess
+                result = subprocess.run(
+                    [EXIFTOOL_PATH, '-b', '-JpgFromRaw', image_path],
+                    capture_output=True,
+                    timeout=10
                 )
 
-            # 转换为PIL Image
-            image = Image.fromarray(rgb)
+                if result.returncode == 0 and len(result.stdout) > 1000:
+                    # 成功提取到JPEG数据
+                    with open(tmp_jpg_path, 'wb') as f:
+                        f.write(result.stdout)
 
-            print(f"✓ RAW图像加载成功，尺寸: {image.size}")
-            print(f"  原始RAW → RGB 8位转换完成")
+                    try:
+                        image = Image.open(tmp_jpg_path).convert("RGB")
+                        os.unlink(tmp_jpg_path)  # 删除临时文件
+                        print(f"✓ RAW图像加载成功，尺寸: {image.size}")
+                        print(f"  使用方法: 内嵌JPEG提取 (全分辨率)")
+                        return image
+                    except Exception as e:
+                        os.unlink(tmp_jpg_path)
+                        print(f"  内嵌JPEG解析失败: {e}")
+                else:
+                    # 没有 JpgFromRaw，尝试提取 PreviewImage
+                    result = subprocess.run(
+                        [EXIFTOOL_PATH, '-b', '-PreviewImage', image_path],
+                        capture_output=True,
+                        timeout=10
+                    )
 
-            return image
+                    if result.returncode == 0 and len(result.stdout) > 1000:
+                        with open(tmp_jpg_path, 'wb') as f:
+                            f.write(result.stdout)
 
-        except rawpy.LibRawError as e:
-            raise Exception(f"RAW文件处理失败: {e}")
-        except Exception as e:
-            raise Exception(f"RAW图像加载失败: {e}")
+                        try:
+                            image = Image.open(tmp_jpg_path).convert("RGB")
+                            os.unlink(tmp_jpg_path)
+                            print(f"✓ RAW图像加载成功，尺寸: {image.size}")
+                            print(f"  使用方法: 预览JPEG提取 (可能低分辨率)")
+                            return image
+                        except Exception as e:
+                            os.unlink(tmp_jpg_path)
+                            print(f"  预览JPEG解析失败: {e}")
+                    else:
+                        if os.path.exists(tmp_jpg_path):
+                            os.unlink(tmp_jpg_path)
+            except Exception as e:
+                print(f"  ExifTool提取失败: {e}")
+
+        # 策略2: 使用rawpy处理RAW文件（如果ExifTool失败或不可用）
+        if RAW_SUPPORT:
+            try:
+                print("  方法2: 尝试使用rawpy解码RAW...")
+
+                # 使用rawpy读取RAW文件
+                with rawpy.imread(image_path) as raw:
+                    # 使用默认参数处理RAW数据
+                    # use_camera_wb=True: 使用相机白平衡
+                    # output_bps=8: 输出8位图像
+                    rgb = raw.postprocess(
+                        use_camera_wb=True,
+                        output_bps=8,
+                        no_auto_bright=False,  # 自动亮度调整
+                        auto_bright_thr=0.01   # 自动亮度阈值
+                    )
+
+                # 转换为PIL Image
+                image = Image.fromarray(rgb)
+
+                print(f"✓ RAW图像加载成功，尺寸: {image.size}")
+                print(f"  使用方法: rawpy解码 (完整RAW处理)")
+
+                return image
+
+            except rawpy.LibRawError as e:
+                print(f"  rawpy解码失败: {e}")
+                # 继续尝试下一个方法
+            except Exception as e:
+                print(f"  rawpy处理失败: {e}")
+        elif not EXIFTOOL_AVAILABLE:
+            # 两种方法都不可用
+            raise ImportError(
+                f"检测到RAW格式 ({file_ext})，但处理库未安装。\n"
+                f"请安装以下任一方案:\n"
+                f"  1. pip install rawpy imageio (推荐，完整RAW处理)\n"
+                f"  2. pip install pyexiftool (轻量，提取内嵌JPEG)"
+            )
+
+        # 如果所有RAW处理方法都失败
+        raise Exception(
+            f"RAW文件 ({file_ext}) 处理失败，已尝试所有可用方法:\n"
+            f"  ✗ ExifTool内嵌JPEG提取: {'已尝试' if EXIFTOOL_AVAILABLE else '不可用'}\n"
+            f"  ✗ rawpy RAW解码: {'已尝试' if RAW_SUPPORT else '不可用'}\n"
+            f"建议: 使用相机自带软件将RAW转换为JPEG格式"
+        )
 
     else:
         # 标准格式 (JPG, PNG, TIFF等)

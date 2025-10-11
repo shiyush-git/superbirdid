@@ -4,9 +4,7 @@
 a = Analysis(
     ['SuperBirdID_GUI.py'],
     pathex=[],
-    binaries=[
-        ('exiftool_bundle/exiftool', 'exiftool'),  # ExifTool二进制文件
-    ],
+    binaries=[],
     datas=[
         ('icon.png', '.'),
         ('icon.icns', '.'),
@@ -14,14 +12,15 @@ a = Analysis(
         ('yolo11l.pt', '.'),  # YOLO11-Large 检测模型
         ('bird_reference.sqlite', '.'),
         ('birdinfo.json', '.'),  # 保留作为备用
+        ('ebird_regions.json', '.'),  # eBird 国家和地区数据
         ('offline_ebird_data', 'offline_ebird_data'),
-        ('SuperBirdIDPlugin.lrplugin', 'Plugins/SuperBirdIDPlugin.lrplugin'),  # Lightroom插件
+        ('exiftool_bundle', 'exiftool_bundle'),  # 完整的 ExifTool bundle（包含所有依赖）
     ],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['PySide6', 'PyQt5', 'PyQt6'],  # 排除未使用的 Qt 包
     noarchive=False,
     optimize=0,
 )

@@ -3,6 +3,14 @@
 SuperBirdID - 简化GUI版本
 极简设计，一键识别，卡片式结果展示
 """
+
+__version__ = "3.0.1"
+
+# 禁用 matplotlib 字体管理器，避免启动时构建字体缓存导致卡顿
+import os
+os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib_cache'
+os.environ['MPLBACKEND'] = 'Agg'  # 使用无GUI后端
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from tkinter import font as tkfont
@@ -74,7 +82,7 @@ def get_user_data_dir():
 class SuperBirdIDGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("慧眼识鸟 - 离线 · 智能 · RAW · 免费")
+        self.root.title(f"慧眼识鸟 v{__version__} - 离线 · 智能 · RAW · 免费")
 
         # 获取屏幕尺寸并设置窗口大小为屏幕的80%
         screen_width = self.root.winfo_screenwidth()
@@ -211,6 +219,7 @@ class SuperBirdIDGUI:
         self.use_gps.trace_add('write', lambda *args: self.save_settings())
         self.use_ebird.trace_add('write', lambda *args: self.save_settings())
         self.selected_country.trace_add('write', lambda *args: self.save_settings())
+        self.selected_region.trace_add('write', lambda *args: self.save_settings())
         self.temperature.trace_add('write', lambda *args: self.save_settings())
 
         # 创建界面
@@ -275,31 +284,16 @@ class SuperBirdIDGUI:
         """加载可用的国家列表（从 ebird_regions.json）"""
         countries = {"自动检测": None, "全球模式": None}
 
-        # 国家代码到中文名称的映射
-        country_names = {
-            'AU': '澳大利亚', 'CN': '中国', 'US': '美国', 'CA': '加拿大',
-            'BR': '巴西', 'IN': '印度', 'ID': '印度尼西亚', 'MX': '墨西哥',
-            'CO': '哥伦比亚', 'PE': '秘鲁', 'EC': '厄瓜多尔', 'BO': '玻利维亚',
-            'VE': '委内瑞拉', 'CL': '智利', 'AR': '阿根廷', 'ZA': '南非',
-            'KE': '肯尼亚', 'TZ': '坦桑尼亚', 'MG': '马达加斯加', 'CM': '喀麦隆',
-            'GH': '加纳', 'NG': '尼日利亚', 'ET': '埃塞俄比亚', 'UG': '乌干达',
-            'CR': '哥斯达黎加', 'PA': '巴拿马', 'GT': '危地马拉', 'NI': '尼加拉瓜',
-            'HN': '洪都拉斯', 'BZ': '伯利兹', 'SV': '萨尔瓦多', 'NO': '挪威',
-            'SE': '瑞典', 'FI': '芬兰', 'GB': '英国', 'FR': '法国',
-            'ES': '西班牙', 'IT': '意大利', 'DE': '德国', 'PL': '波兰',
-            'RO': '罗马尼亚', 'TR': '土耳其', 'RU': '俄罗斯', 'JP': '日本',
-            'KR': '韩国', 'TH': '泰国', 'VN': '越南', 'PH': '菲律宾',
-            'MY': '马来西亚', 'SG': '新加坡', 'NZ': '新西兰'
-        }
-
         try:
             regions_data = self.load_regions_data()
             if regions_data and 'countries' in regions_data:
                 # 从 ebird_regions.json 读取国家列表
+                # 注意：countries 已经在数据文件中按优先级排序好了
                 for country in regions_data['countries']:
                     code = country['code']
                     name = country['name']
-                    cn_name = country_names.get(code, name)
+                    # 优先使用中文名，如果没有则使用英文名
+                    cn_name = country.get('name_cn', name)
                     display_name = f"{cn_name} ({code})"
                     countries[display_name] = code
         except Exception as e:
@@ -407,7 +401,9 @@ class SuperBirdIDGUI:
                     from ebird_country_filter import eBirdCountryFilter
                     import os as os_module
                     api_key = os_module.environ.get('EBIRD_API_KEY', '60nan25sogpo')
-                    filter_system = eBirdCountryFilter(api_key)
+                    cache_dir = os_module.path.join(get_user_data_dir(), 'ebird_cache')
+                    offline_dir = get_resource_path("offline_ebird_data")
+                    filter_system = eBirdCountryFilter(api_key, cache_dir=cache_dir, offline_dir=offline_dir)
 
                     species_set = filter_system.get_country_species_list(region_code)
 

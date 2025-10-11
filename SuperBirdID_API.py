@@ -114,7 +114,7 @@ def health_check():
     return jsonify({
         'status': 'ok',
         'service': 'SuperBirdID API',
-        'version': '1.0.0',
+        'version': '3.0.1',
         'yolo_available': YOLO_AVAILABLE,
         'ebird_available': EBIRD_FILTER_AVAILABLE
     })
