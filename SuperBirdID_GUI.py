@@ -4,7 +4,7 @@ SuperBirdID - 简化GUI版本
 极简设计，一键识别，卡片式结果展示
 """
 
-__version__ = "3.0.1"
+__version__ = "3.0.2"
 
 # 禁用 matplotlib 字体管理器，避免启动时构建字体缓存导致卡顿
 import os
@@ -82,6 +82,13 @@ def get_user_data_dir():
 class SuperBirdIDGUI:
     def __init__(self, root):
         self.root = root
+
+        # ===== 新增：平台检测 =====
+        import platform
+        self.is_macos = platform.system() == 'Darwin'
+        self.is_windows = platform.system() == 'Windows'
+        # ===== 新增结束 =====
+
         self.root.title(f"慧眼识鸟 v{__version__} - 离线 · 智能 · RAW · 免费")
 
         # 获取屏幕尺寸并设置窗口大小为屏幕的80%
@@ -89,6 +96,9 @@ class SuperBirdIDGUI:
         screen_height = self.root.winfo_screenheight()
         window_width = int(screen_width * 0.8)
         window_height = int(screen_height * 0.85)
+
+        # 检测是否为小屏幕（高度小于800px）
+        self.is_small_screen = screen_height < 800
 
         # 居中显示
         x = (screen_width - window_width) // 2
@@ -331,42 +341,63 @@ class SuperBirdIDGUI:
         """当用户选择国家时，更新区域列表"""
         selected_country_display = self.selected_country.get()
 
-        # 如果选择的是"自动检测"或"全球模式"，区域菜单显示"整个国家"
         if selected_country_display in ["自动检测", "全球模式"]:
-            self.region_menu['values'] = ["整个国家"]
-            self.region_menu.set("整个国家")
+            region_options = ["整个国家"]
+            # 更新两个区域菜单
+            if hasattr(self, 'region_menu'):
+                self.region_menu['values'] = region_options
+                self.region_menu.set("整个国家")
+            if hasattr(self, 'region_menu_quick'):
+                self.region_menu_quick['values'] = region_options
+                self.region_menu_quick.set("整个国家")
             return
 
-        # 从显示名称中提取国家代码，格式: "澳大利亚 (AU)"
         country_code = self.country_list.get(selected_country_display)
         if not country_code:
-            self.region_menu['values'] = ["整个国家"]
-            self.region_menu.set("整个国家")
+            region_options = ["整个国家"]
+            if hasattr(self, 'region_menu'):
+                self.region_menu['values'] = region_options
+                self.region_menu.set("整个国家")
+            if hasattr(self, 'region_menu_quick'):
+                self.region_menu_quick['values'] = region_options
+                self.region_menu_quick.set("整个国家")
             return
 
-        # 从缓存的区域数据中查找该国家的区域列表
         if self.regions_data_cache and 'countries' in self.regions_data_cache:
             for country in self.regions_data_cache['countries']:
                 if country['code'] == country_code:
                     if country['has_regions'] and len(country['regions']) > 0:
-                        # 有二级区域，构建区域列表
-                        region_options = ["整个国家"]  # 第一个选项总是"整个国家"
+                        region_options = ["整个国家"]
                         for region in country['regions']:
                             region_options.append(f"{region['name']} ({region['code']})")
 
-                        self.region_menu['values'] = region_options
-                        self.region_menu.set("整个国家")
+                        # 更新两个区域菜单
+                        if hasattr(self, 'region_menu'):
+                            self.region_menu['values'] = region_options
+                            self.region_menu.set("整个国家")
+                        if hasattr(self, 'region_menu_quick'):
+                            self.region_menu_quick['values'] = region_options
+                            self.region_menu_quick.set("整个国家")
                         print(f"已加载 {country_code} 的 {len(country['regions'])} 个区域")
                     else:
-                        # 没有二级区域
-                        self.region_menu['values'] = ["整个国家"]
-                        self.region_menu.set("整个国家")
+                        region_options = ["整个国家"]
+                        if hasattr(self, 'region_menu'):
+                            self.region_menu['values'] = region_options
+                            self.region_menu.set("整个国家")
+                        if hasattr(self, 'region_menu_quick'):
+                            self.region_menu_quick['values'] = region_options
+                            self.region_menu_quick.set("整个国家")
                         print(f"{country_code} 没有二级区域")
                     return
 
-        # 如果没找到，显示"整个国家"
-        self.region_menu['values'] = ["整个国家"]
-        self.region_menu.set("整个国家")
+        # 默认值
+        region_options = ["整个国家"]
+        if hasattr(self, 'region_menu'):
+            self.region_menu['values'] = region_options
+            self.region_menu.set("整个国家")
+        if hasattr(self, 'region_menu_quick'):
+            self.region_menu_quick['values'] = region_options
+            self.region_menu_quick.set("整个国家")
 
     def on_region_changed(self, event=None):
         """当用户选择区域时，下载该区域的物种数据"""
@@ -526,30 +557,35 @@ class SuperBirdIDGUI:
 
         # 右侧滚动容器
         self.canvas = tk.Canvas(right_panel, bg=self.colors['bg'], highlightthickness=0)
-        scrollbar = tk.Scrollbar(right_panel, orient='vertical', command=self.canvas.yview)
+        self.scrollbar = tk.Scrollbar(right_panel, orient='vertical', command=self.canvas.yview)
         self.results_scrollable_frame = tk.Frame(self.canvas, bg=self.colors['bg'])
 
-        self.results_scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        )
+        def on_frame_configure(event):
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            self.update_scrollbar_visibility()
 
-        self.canvas.create_window((0, 0), window=self.results_scrollable_frame, anchor="nw")
-        self.canvas.configure(yscrollcommand=scrollbar.set)
+        self.results_scrollable_frame.bind("<Configure>", on_frame_configure)
 
-        # 绑定鼠标滚轮事件（只对右侧生效）
+        self.canvas_window = self.canvas.create_window((0, 0), window=self.results_scrollable_frame, anchor="nw")
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        # 绑定鼠标滚轮事件
         def _on_mousewheel_right(event):
-            if event.num == 5 or event.delta < 0:
-                self.canvas.yview_scroll(1, "units")
-            elif event.num == 4 or event.delta > 0:
-                self.canvas.yview_scroll(-1, "units")
+
+            if self.scrollbar.winfo_ismapped():
+                if event.num == 5 or event.delta < 0:
+                    self.canvas.yview_scroll(1, "units")
+                elif event.num == 4 or event.delta > 0:
+                    self.canvas.yview_scroll(-1, "units")
 
         self.canvas.bind_all("<MouseWheel>", _on_mousewheel_right)
         self.canvas.bind_all("<Button-4>", _on_mousewheel_right)
         self.canvas.bind_all("<Button-5>", _on_mousewheel_right)
 
+
         self.canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        self.canvas.bind('<Configure>', lambda e: self.update_scrollbar_visibility())
+
 
         # 左侧面板内容
         self.create_upload_area(left_panel)
@@ -564,6 +600,10 @@ class SuperBirdIDGUI:
 
     def create_header(self, parent):
         """创建顶部标题"""
+        # 小屏幕时隐藏标题节省空间
+        if self.is_small_screen:
+            return
+            
         header = tk.Frame(parent, bg=self.colors['bg'])
         header.pack(pady=(25, 20))
 
@@ -613,8 +653,16 @@ class SuperBirdIDGUI:
 
     def create_upload_area(self, parent):
         """创建图片上传/显示区域"""
+        # 根据屏幕大小动态调整高度
+        if self.is_small_screen:
+            card_height = 350  # 小屏幕：较小的卡片高度
+            image_height = 260  # 小屏幕：较小的图片区域
+        else:
+            card_height = 480  # 正常屏幕：原始高度
+            image_height = 390
+            
         card = tk.Frame(parent, bg=self.colors['card'],
-                       relief='flat', bd=0, height=480)
+                       relief='flat', bd=0, height=card_height)
         card.pack(pady=(0, 15), fill=tk.X)
         card.pack_propagate(False)  # 保持固定高度
 
@@ -632,8 +680,8 @@ class SuperBirdIDGUI:
                                    anchor='w')
         self.info_label.pack(padx=20, pady=(15, 10), fill=tk.X)
 
-        # 图片显示区 - 固定尺寸
-        self.image_container = tk.Frame(card, bg=self.colors['card'], height=390)
+        # 图片显示区 - 动态尺寸
+        self.image_container = tk.Frame(card, bg=self.colors['card'], height=image_height)
         self.image_container.pack(padx=20, pady=(0, 20), fill=tk.BOTH)
         self.image_container.pack_propagate(False)  # 保持固定高度
 
@@ -658,42 +706,49 @@ class SuperBirdIDGUI:
         placeholder_content = tk.Frame(self.upload_placeholder, bg=self.colors['card'])
         placeholder_content.place(relx=0.5, rely=0.5, anchor='center')
 
-        # 图标背景圆 - 暗色主题
+        # 图标背景圆 - 小屏幕时缩小
+        icon_size = 80 if self.is_small_screen else 120
+        icon_font_size = 40 if self.is_small_screen else 56
+        
         icon_bg = tk.Frame(placeholder_content, bg=self.colors['bg_secondary'],
-                          width=120, height=120)
+                          width=icon_size, height=icon_size)
         icon_bg.pack()
         icon_bg.pack_propagate(False)
 
         icon = tk.Label(icon_bg, text="+",
-                       font=tkfont.Font(size=56),
+                       font=tkfont.Font(size=icon_font_size),
                        bg=self.colors['bg_secondary'])
         icon.place(relx=0.5, rely=0.5, anchor='center')
 
+        # 文字大小根据屏幕调整
+        title_size = 14 if self.is_small_screen else 18
+        subtitle_size = 10 if self.is_small_screen else 13
+        
         text1 = tk.Label(placeholder_content,
                         text="将鸟类照片拖放到这里",
-                        font=tkfont.Font(family='SF Pro Display', size=18, weight='bold'),
+                        font=tkfont.Font(family='SF Pro Display', size=title_size, weight='bold'),
                         fg=self.colors['text'],
                         bg=self.colors['card'])
-        text1.pack(pady=(25, 8))
+        text1.pack(pady=(15 if self.is_small_screen else 25, 8))
 
         text2 = tk.Label(placeholder_content,
                         text='点击"选择图片"或按 Ctrl+V 粘贴',
-                        font=self.fonts['body'],
+                        font=tkfont.Font(family='SF Pro Text', size=subtitle_size),
                         fg=self.colors['text_secondary'],
                         bg=self.colors['card'])
-        text2.pack(pady=(0, 15))
+        text2.pack(pady=(0, 10 if self.is_small_screen else 15))
 
         # 分隔线 - 暗色
         separator = tk.Frame(placeholder_content, bg=self.colors['divider'],
                             height=1, width=200)
-        separator.pack(pady=10)
+        separator.pack(pady=5 if self.is_small_screen else 10)
 
         formats = tk.Label(placeholder_content,
                           text="✓ 支持: JPG · PNG · TIFF · RAW · 剪贴板",
-                          font=tkfont.Font(family='SF Pro Text', size=11),
+                          font=tkfont.Font(family='SF Pro Text', size=9 if self.is_small_screen else 11),
                           fg=self.colors['accent_light'],
                           bg=self.colors['card'])
-        formats.pack(pady=(10, 0))
+        formats.pack(pady=(5 if self.is_small_screen else 10, 0))
 
         # 点击上传 - 绑定到所有组件
         click_handler = lambda e: self.open_image()
@@ -752,71 +807,140 @@ class SuperBirdIDGUI:
     def create_action_buttons(self, parent):
         """创建操作按钮"""
         button_frame = tk.Frame(parent, bg=self.colors['bg'])
-        button_frame.pack(pady=(0, 15))
+        button_frame.pack(pady=(0, 15), fill=tk.X)
 
-        # 打开图片按钮 - 白色背景+黑色文字
-        self.open_btn = tk.Button(button_frame,
-                                  text="📁 选择图片",
-                                  font=self.fonts['button'],
-                                  bg='#ffffff',
-                                  fg='#000000',
-                                  activebackground='#f0f0f0',
-                                  activeforeground='#000000',
-                                  relief='solid',
-                                  bd=2,
-                                  padx=15, pady=15,
-                                  cursor='hand2',
-                                  command=self.open_image)
-        self.open_btn.pack(side=tk.LEFT, padx=10)
-        self.open_btn.configure(borderwidth=2,
-                               relief='solid',
-                               highlightbackground='#333333')
+        # ===== 新增：国家和区域选择行 =====
+        location_frame = tk.Frame(button_frame, bg=self.colors['bg'])
+        location_frame.pack(fill=tk.X, pady=(0, 5))  
+        
+        location_frame.grid_columnconfigure(0, weight=1, uniform='location')
+        location_frame.grid_columnconfigure(1, weight=1, uniform='location')
+        
+        # 国家选择容器
+        country_container = tk.Frame(location_frame, bg=self.colors['card'], 
+                                    relief='solid', bd=1)
+        country_container.grid(row=0, column=0, padx=(0, 5), sticky='ew')
+        country_container.configure(highlightbackground=self.colors['border'],
+                                highlightthickness=1)
+        
+        country_inner = tk.Frame(country_container, bg=self.colors['card'])
+        country_inner.pack(fill=tk.X, padx=8, pady=4) 
+        
+        country_label = tk.Label(country_inner,
+                                text="国家:",
+                                font=tkfont.Font(family='SF Pro Text', size=10), 
+                                fg=self.colors['text_secondary'],
+                                bg=self.colors['card'])
+        country_label.pack(side=tk.LEFT, padx=(0, 5))
+        
+        # 国家下拉菜单（快捷版）
+        self.country_menu_quick = ttk.Combobox(country_inner,
+                                            textvariable=self.selected_country,
+                                            values=list(self.country_list.keys()),
+                                            state='readonly',
+                                            width=15,
+                                            font=tkfont.Font(family='SF Pro Text', size=10))
+        self.country_menu_quick.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.country_menu_quick.bind('<<ComboboxSelected>>', self.on_country_changed)
+        
+        # 区域选择容器
+        region_container = tk.Frame(location_frame, bg=self.colors['card'],
+                                relief='solid', bd=1)
+        region_container.grid(row=0, column=1, padx=(5, 0), sticky='ew')
+        region_container.configure(highlightbackground=self.colors['border'],
+                                highlightthickness=1)
+        
+        region_inner = tk.Frame(region_container, bg=self.colors['card'])
+        region_inner.pack(fill=tk.X, padx=8, pady=4)  
+        
+        region_label = tk.Label(region_inner,
+                            text="区域:",
+                            font=tkfont.Font(family='SF Pro Text', size=10), 
+                            fg=self.colors['text_secondary'],
+                            bg=self.colors['card'])
+        region_label.pack(side=tk.LEFT, padx=(0, 5))
+        
+        # 区域下拉菜单（快捷版）
+        self.region_menu_quick = ttk.Combobox(region_inner,
+                                            textvariable=self.selected_region,
+                                            values=["整个国家"],
+                                            state='readonly',
+                                            width=15,
+                                            font=tkfont.Font(family='SF Pro Text', size=10))
+        self.region_menu_quick.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.region_menu_quick.bind('<<ComboboxSelected>>', self.on_region_changed)
+        
+        buttons_grid = tk.Frame(button_frame, bg=self.colors['bg'])
+        buttons_grid.pack(fill=tk.X, pady=(5, 0))
 
-        # 识别按钮（主要操作） - 白色背景+黑色文字
-        self.recognize_btn = tk.Button(button_frame,
-                                       text="🔍 开始识别",
-                                       font=tkfont.Font(family='SF Pro Display',
-                                                       size=16, weight='bold'),
-                                       bg='#ffffff',
-                                       fg='#000000',
-                                       activebackground='#f0f0f0',
-                                       activeforeground='#000000',
-                                       relief='solid',
-                                       bd=2,
-                                       padx=50, pady=18,
-                                       cursor='hand2',
-                                       command=self.start_recognition)
-        self.recognize_btn.pack(side=tk.LEFT, padx=10)
-        self.recognize_btn.configure(borderwidth=2,
+        # 配置4列，每列等宽
+        buttons_grid.grid_columnconfigure(0, weight=1, uniform='button')
+        buttons_grid.grid_columnconfigure(1, weight=1, uniform='button')
+        buttons_grid.grid_columnconfigure(2, weight=1, uniform='button')
+        buttons_grid.grid_columnconfigure(3, weight=1, uniform='button')
+
+        self.open_btn = tk.Button(buttons_grid,
+                                text="📁 选择图片",
+                                font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                bg='#ffffff',
+                                fg='#000000',
+                                activebackground='#f0f0f0',
+                                activeforeground='#000000',
+                                relief='solid',
+                                bd=2,
+                                padx=8, pady=6,
+                                cursor='hand2',
+                                command=self.open_image)
+        self.open_btn.grid(row=0, column=0, padx=3, pady=4, sticky='ew')
+
+        self.recognize_btn = tk.Button(buttons_grid,
+                                    text="🔍 开始识别",
+                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                    bg='#ffffff',
+                                    fg='#000000',
+                                    activebackground='#f0f0f0',
+                                    activeforeground='#000000',
                                     relief='solid',
-                                    highlightbackground='#333333')
+                                    bd=2,
+                                    padx=8, pady=6,
+                                    cursor='hand2',
+                                    command=self.start_recognition)
+        self.recognize_btn.grid(row=0, column=1, padx=3, pady=4, sticky='ew')
 
-        # 高级选项按钮 - 白色背景+黑色文字
-        self.advanced_btn = tk.Button(button_frame,
-                                     text="⚙️ 高级选项",
-                                     font=self.fonts['body'],
-                                     bg='#ffffff',
-                                     fg='#000000',
-                                     activebackground='#f0f0f0',
-                                     activeforeground='#000000',
-                                     relief='solid',
-                                     bd=2,
-                                     padx=20, pady=15,
-                                     cursor='hand2',
-                                     command=self.toggle_advanced)
-        self.advanced_btn.pack(side=tk.LEFT, padx=10)
-        self.advanced_btn.configure(borderwidth=2,
-                                   relief='solid',
-                                   highlightbackground='#333333')
+        self.screenshot_btn = tk.Button(buttons_grid,
+                                    text="📸 截图识别",
+                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                    bg='#ffffff',
+                                    fg='#000000',
+                                    activebackground='#f0f0f0',
+                                    activeforeground='#000000',
+                                    relief='solid',
+                                    bd=2,
+                                    padx=8, pady=6,
+                                    cursor='hand2',
+                                    command=self.screenshot_and_load)
+        self.screenshot_btn.grid(row=0, column=2, padx=3, pady=4, sticky='ew')
 
-        # 悬停效果 - 统一的按钮悬停处理函数
+        self.advanced_btn = tk.Button(buttons_grid,
+                                    text="⚙️ 高级选项",
+                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                    bg='#ffffff',
+                                    fg='#000000',
+                                    activebackground='#f0f0f0',
+                                    activeforeground='#000000',
+                                    relief='solid',
+                                    bd=2,
+                                    padx=8, pady=6,
+                                    cursor='hand2',
+                                    command=self.toggle_advanced)
+        self.advanced_btn.grid(row=0, column=3, padx=3, pady=4, sticky='ew') 
+
+        # 悬停效果
         def create_button_hover_handlers(button, is_primary=False):
-            """创建按钮悬停效果处理器"""
             def on_enter(e):
                 button.configure(bg='#e0e0e0', highlightbackground='#666666')
 
             def on_leave(e):
-                # 主按钮在处理中时不恢复
                 if is_primary and self.is_processing:
                     return
                 button.configure(bg='#ffffff', highlightbackground='#333333')
@@ -826,12 +950,15 @@ class SuperBirdIDGUI:
         # 绑定悬停效果
         enter_primary, leave_primary = create_button_hover_handlers(self.recognize_btn, is_primary=True)
         enter_open, leave_open = create_button_hover_handlers(self.open_btn)
+        enter_screenshot, leave_screenshot = create_button_hover_handlers(self.screenshot_btn)
         enter_adv, leave_adv = create_button_hover_handlers(self.advanced_btn)
 
         self.recognize_btn.bind('<Enter>', enter_primary)
         self.recognize_btn.bind('<Leave>', leave_primary)
         self.open_btn.bind('<Enter>', enter_open)
         self.open_btn.bind('<Leave>', leave_open)
+        self.screenshot_btn.bind('<Enter>', enter_screenshot)
+        self.screenshot_btn.bind('<Leave>', leave_screenshot)
         self.advanced_btn.bind('<Enter>', enter_adv)
         self.advanced_btn.bind('<Leave>', leave_adv)
 
@@ -1315,6 +1442,8 @@ class SuperBirdIDGUI:
             self.show_advanced.set(True)
             self.advanced_btn.config(text="✖ 关闭设置")
 
+        self.root.after(100, self.update_scrollbar_visibility)
+
     def create_status_bar(self):
         """创建状态栏"""
         status_frame = tk.Frame(self.root, bg=self.colors['card'], height=50,
@@ -1344,6 +1473,25 @@ class SuperBirdIDGUI:
                                        fg=self.colors['accent'],
                                        bg=self.colors['card'])
         self.progress_label.pack(side=tk.RIGHT, padx=25, pady=10)
+
+    def update_scrollbar_visibility(self):
+        """根据内容高度动态显示/隐藏滚动条"""
+        try:
+            self.canvas.update_idletasks()
+            
+            canvas_height = self.canvas.winfo_height()
+            content_height = self.results_scrollable_frame.winfo_reqheight()
+            
+            # 只有内容超出时才显示滚动条
+            if content_height > canvas_height and canvas_height > 1:
+                if not self.scrollbar.winfo_ismapped():
+                    self.scrollbar.pack(side="right", fill="y")
+            else:
+                if self.scrollbar.winfo_ismapped():
+                    self.scrollbar.pack_forget()
+                    
+        except Exception:
+            pass
 
     def open_image(self):
         """打开图片文件"""
@@ -1417,6 +1565,187 @@ class SuperBirdIDGUI:
         except Exception as e:
             messagebox.showerror("错误", f"加载图片失败:\n{type(e).__name__}: {e}")
 
+    def screenshot_and_load(self):
+        """调用截图工具并加载截图（跨平台）"""
+        import subprocess
+        import tempfile
+        import time
+        
+        try:
+            # 创建临时文件
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+            temp_path = temp_file.name
+            temp_file.close()
+            
+            # macOS 使用系统原生截图
+            if self.is_macos:
+                # 提示用户
+                self.update_status("请使用系统截图工具框选区域...")
+                
+                # 最小化窗口
+                self.root.iconify()
+                self.root.update()
+                time.sleep(0.2)
+                
+                # 调用 macOS 原生截图命令
+                # -i: 交互式选择区域
+                # -o: 不播放截图声音
+                result = subprocess.run(
+                    ['screencapture', '-i', '-o', temp_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=60
+                )
+                
+                # 恢复窗口
+                self.root.deiconify()
+                self.root.lift()
+                self.root.focus_force()
+                
+                # 检查是否成功截图
+                if result.returncode == 0 and os.path.exists(temp_path):
+                    if os.path.getsize(temp_path) > 0:
+                        # 清理旧的临时文件
+                        if hasattr(self, '_temp_screenshot_file') and os.path.exists(self._temp_screenshot_file):
+                            try:
+                                os.unlink(self._temp_screenshot_file)
+                            except OSError:
+                                pass
+                        
+                        self._temp_screenshot_file = temp_path
+                        
+                        # 加载截图
+                        self.load_image(temp_path)
+                        self.update_status("✓ 截图已加载")
+                        
+                        # 自动开始识别
+                        self.root.after(100, self.start_recognition)
+                    else:
+                        # 用户取消了截图（按 ESC）
+                        os.unlink(temp_path)
+                        self.update_status("已取消截图")
+                else:
+                    # 截图失败或取消
+                    if os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                    self.update_status("已取消截图")
+            
+            # Windows 使用 PyQt6 截图工具
+            else:
+                # 获取截图工具路径
+                if getattr(sys, 'frozen', False):
+                    # 打包后使用独立的 screenshot_tool.exe
+                    screenshot_tool_path = os.path.join(os.path.dirname(sys.executable), 'screenshot_tool.exe')
+                    use_exe = True
+                else:
+                    # 开发环境使用 py 脚本
+                    screenshot_tool_path = os.path.join(os.path.dirname(__file__), 'screenshot_tool.py')
+                    use_exe = False
+                
+                # 检查截图工具是否存在
+                if not os.path.exists(screenshot_tool_path):
+                    messagebox.showerror("错误", 
+                                    f"截图工具不存在\n请确保 screenshot_tool.exe 在程序目录中")
+                    return
+                
+                # 最小化主窗口
+                self.root.iconify()
+                self.root.update()
+                
+                # 等待窗口最小化完成
+                import time
+                time.sleep(0.3)
+                
+                # 设置环境变量强制 UTF-8（仅开发环境需要）
+                env = os.environ.copy()
+                env['PYTHONIOENCODING'] = 'utf-8'
+                env['PYTHONUTF8'] = '1'
+                
+                # 调用截图工具
+                if use_exe:
+                    # 打包后：直接运行独立的 exe
+                    result = subprocess.run(
+                        [screenshot_tool_path, temp_path],
+                        capture_output=True,
+                        text=True,
+                        encoding='utf-8',
+                        errors='replace',
+                        timeout=60,
+                        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+                    )
+                else:
+                    # 开发环境：用 python 运行脚本
+                    result = subprocess.run(
+                        [sys.executable, screenshot_tool_path, temp_path],
+                        capture_output=True,
+                        text=True,
+                        encoding='utf-8',
+                        errors='replace',
+                        timeout=60,
+                        env=env,
+                        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+                    )
+                
+                # 恢复主窗口
+                self.root.deiconify()
+                self.root.lift()
+                self.root.focus_force()
+                
+                # 检查截图是否成功
+                if "SUCCESS:" in result.stdout and os.path.exists(temp_path):
+                    if os.path.getsize(temp_path) > 0:
+                        if hasattr(self, '_temp_screenshot_file') and os.path.exists(self._temp_screenshot_file):
+                            try:
+                                os.unlink(self._temp_screenshot_file)
+                            except OSError:
+                                pass
+                        
+                        self._temp_screenshot_file = temp_path
+                        
+                        # 加载截图
+                        self.load_image(temp_path)
+                        self.update_status("✓ 截图已加载")
+                        
+                        # 自动开始识别
+                        self.root.after(100, self.start_recognition)
+                    else:
+                        os.unlink(temp_path)
+                        self.update_status("已取消截图")
+                elif "CANCELLED" in result.stdout:
+                    if os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                    self.update_status("已取消截图")
+                else:
+                    if os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                    error_msg = result.stderr if result.stderr else "未知错误"
+                    messagebox.showerror("截图失败", f"截图工具返回错误:\n{error_msg}")
+        
+        except subprocess.TimeoutExpired:
+            self.root.deiconify()
+            messagebox.showerror("超时", "截图操作超时")
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.unlink(temp_path)
+        
+        except FileNotFoundError as e:
+            self.root.deiconify()
+            if self.is_macos:
+                messagebox.showerror("错误", 
+                    "找不到 screencapture 命令\n请确认您的 macOS 系统是否正常")
+            else:
+                messagebox.showerror("错误", f"截图工具不存在:\n{e}")
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.unlink(temp_path)
+        
+        except Exception as e:
+            self.root.deiconify()
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"截图功能错误详情:\n{error_details}")
+            messagebox.showerror("错误", f"截图功能出错:\n{e}")
+            if 'temp_path' in locals() and os.path.exists(temp_path):
+                os.unlink(temp_path)
+
     def display_image(self, pil_image):
         """在界面上显示图片 - 自适应窗口大小（优化版）"""
         try:
@@ -1468,6 +1797,8 @@ class SuperBirdIDGUI:
         for widget in self.result_cards_frame.winfo_children():
             widget.destroy()
         self.result_cards_frame.pack_forget()
+
+        self.root.after(100, self.update_scrollbar_visibility)
 
     def animate_loading(self):
         """加载动画效果"""
@@ -2072,6 +2403,8 @@ class SuperBirdIDGUI:
             if success:
                 self.update_status(message)
 
+        self.root.after(100, self.update_scrollbar_visibility)
+
     def adjust_card_layout(self):
         """根据窗口宽度调整卡片布局"""
         try:
@@ -2642,6 +2975,14 @@ class SuperBirdIDGUI:
                     os.unlink(self._temp_clipboard_file)
                 except OSError:
                     pass
+
+            # ===== 新增：清理临时截图文件 =====
+            if hasattr(self, '_temp_screenshot_file') and os.path.exists(self._temp_screenshot_file):
+                try:
+                    os.unlink(self._temp_screenshot_file)
+                except OSError:
+                    pass
+            # ===== 新增结束 =====
 
             # 如果正在处理，警告用户
             if self.is_processing:
