@@ -588,8 +588,8 @@ class SuperBirdIDGUI:
 
 
         # 左侧面板内容
-        self.create_upload_area(left_panel)
         self.create_action_buttons(left_panel)
+        self.create_upload_area(left_panel)
 
         # 右侧面板内容（包含高级选项和结果展示区）
         self.create_advanced_options(self.results_scrollable_frame)
@@ -807,7 +807,7 @@ class SuperBirdIDGUI:
     def create_action_buttons(self, parent):
         """创建操作按钮"""
         button_frame = tk.Frame(parent, bg=self.colors['bg'])
-        button_frame.pack(pady=(0, 15), fill=tk.X)
+        button_frame.pack(pady=(15, 15), fill=tk.X)
 
         # ===== 新增：国家和区域选择行 =====
         location_frame = tk.Frame(button_frame, bg=self.colors['bg'])
@@ -871,66 +871,69 @@ class SuperBirdIDGUI:
         self.region_menu_quick.bind('<<ComboboxSelected>>', self.on_region_changed)
         
         buttons_grid = tk.Frame(button_frame, bg=self.colors['bg'])
-        buttons_grid.pack(fill=tk.X, pady=(5, 0))  
-        
+        buttons_grid.pack(fill=tk.X, pady=(5, 0))
+
+        # 配置4列等宽
         buttons_grid.grid_columnconfigure(0, weight=1, uniform='button')
         buttons_grid.grid_columnconfigure(1, weight=1, uniform='button')
+        buttons_grid.grid_columnconfigure(2, weight=1, uniform='button')
+        buttons_grid.grid_columnconfigure(3, weight=1, uniform='button')
 
         self.open_btn = tk.Button(buttons_grid,
                                 text="📁 选择图片",
-                                font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'), 
+                                font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
                                 bg='#ffffff',
                                 fg='#000000',
                                 activebackground='#f0f0f0',
                                 activeforeground='#000000',
                                 relief='solid',
                                 bd=2,
-                                padx=15, pady=8,  
+                                padx=8, pady=6,
                                 cursor='hand2',
                                 command=self.open_image)
-        self.open_btn.grid(row=0, column=0, padx=5, pady=4, sticky='ew')  
+        self.open_btn.grid(row=0, column=0, padx=3, pady=4, sticky='ew')
 
         self.recognize_btn = tk.Button(buttons_grid,
                                     text="🔍 开始识别",
-                                    font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'),  
+                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
                                     bg='#ffffff',
                                     fg='#000000',
                                     activebackground='#f0f0f0',
                                     activeforeground='#000000',
                                     relief='solid',
                                     bd=2,
-                                    padx=15, pady=8,  
+                                    padx=8, pady=6,
                                     cursor='hand2',
                                     command=self.start_recognition)
-        self.recognize_btn.grid(row=0, column=1, padx=5, pady=4, sticky='ew')  
+        self.recognize_btn.grid(row=0, column=1, padx=3, pady=4, sticky='ew')
 
         self.screenshot_btn = tk.Button(buttons_grid,
                                     text="📸 截图识别",
-                                    font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'),  
+                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
                                     bg='#ffffff',
                                     fg='#000000',
                                     activebackground='#f0f0f0',
                                     activeforeground='#000000',
                                     relief='solid',
                                     bd=2,
-                                    padx=15, pady=8,  
+                                    padx=8, pady=6,
                                     cursor='hand2',
                                     command=self.screenshot_and_load)
-        self.screenshot_btn.grid(row=1, column=0, padx=5, pady=4, sticky='ew')
+        self.screenshot_btn.grid(row=0, column=2, padx=3, pady=4, sticky='ew')
 
         self.advanced_btn = tk.Button(buttons_grid,
                                     text="⚙️ 高级选项",
-                                    font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'), 
+                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
                                     bg='#ffffff',
                                     fg='#000000',
                                     activebackground='#f0f0f0',
                                     activeforeground='#000000',
                                     relief='solid',
                                     bd=2,
-                                    padx=15, pady=8,  
+                                    padx=8, pady=6,
                                     cursor='hand2',
                                     command=self.toggle_advanced)
-        self.advanced_btn.grid(row=1, column=1, padx=5, pady=4, sticky='ew') 
+        self.advanced_btn.grid(row=0, column=3, padx=3, pady=4, sticky='ew') 
 
         # 悬停效果
         def create_button_hover_handlers(button, is_primary=False):
@@ -1191,52 +1194,6 @@ class SuperBirdIDGUI:
         content = tk.Frame(content_card, bg=self.colors['card'])
         content.pack(padx=25, pady=20, fill=tk.BOTH, expand=True)
 
-        option_title = tk.Label(content,
-                               text="识别选项配置",
-                               font=self.fonts['heading'],
-                               fg=self.colors['text'],
-                               bg=self.colors['card'])
-        option_title.pack(anchor='w', pady=(0, 10))
-
-        if YOLO_AVAILABLE:
-            yolo_frame = tk.Frame(content, bg=self.colors['card'])
-            yolo_frame.pack(fill=tk.X, pady=5)
-
-            yolo_check = tk.Checkbutton(yolo_frame,
-                                       text="✓ 启用 YOLO 智能鸟类检测",
-                                       variable=self.use_yolo,
-                                       font=self.fonts['body'],
-                                       bg=self.colors['card'],
-                                       fg=self.colors['text'],
-                                       selectcolor=self.colors['card'])
-            yolo_check.pack(anchor='w')
-
-            yolo_desc = tk.Label(yolo_frame,
-                               text="    自动裁剪图片中的鸟类区域，提高识别精度",
-                               font=self.fonts['small'],
-                               fg=self.colors['text_secondary'],
-                               bg=self.colors['card'])
-            yolo_desc.pack(anchor='w', pady=(2, 0))
-
-        gps_frame = tk.Frame(content, bg=self.colors['card'])
-        gps_frame.pack(fill=tk.X, pady=5)
-
-        gps_check = tk.Checkbutton(gps_frame,
-                                  text="✓ 启用 GPS 地理位置分析",
-                                  variable=self.use_gps,
-                                  font=self.fonts['body'],
-                                  bg=self.colors['card'],
-                                  fg=self.colors['text'],
-                                  selectcolor=self.colors['card'])
-        gps_check.pack(anchor='w')
-
-        gps_desc = tk.Label(gps_frame,
-                          text="    根据照片GPS信息优化识别结果",
-                          font=self.fonts['small'],
-                          fg=self.colors['text_secondary'],
-                          bg=self.colors['card'])
-        gps_desc.pack(anchor='w', pady=(2, 0))
-
         # eBird过滤选项
         if EBIRD_FILTER_AVAILABLE:
             ebird_frame = tk.Frame(content, bg=self.colors['card'])
@@ -1491,23 +1448,65 @@ class SuperBirdIDGUI:
             pass
 
     def open_image(self):
-        """打开图片文件"""
-        filetypes = [
-            ("所有支持格式", "*.jpg *.jpeg *.png *.tiff *.bmp"),
-            ("JPEG图片", "*.jpg *.jpeg"),
-            ("PNG图片", "*.png"),
-        ]
+        """打开图片文件 - 使用原生macOS对话框避免崩溃"""
+        import subprocess
+        import sys
 
-        if RAW_SUPPORT:
-            filetypes.insert(0, ("RAW格式", "*.cr2 *.cr3 *.nef *.arw *.dng *.raf"))
+        try:
+            # 在macOS上使用原生文件选择器（避免tkinter对话框崩溃）
+            if sys.platform == 'darwin':
+                # 使用osascript调用原生macOS文件选择器
+                script = '''
+                tell application "System Events"
+                    activate
+                    set theFile to choose file with prompt "请选择图片文件" of type {"public.image"}
+                    return POSIX path of theFile
+                end tell
+                '''
 
-        filename = filedialog.askopenfilename(
-            title="选择图片",
-            filetypes=filetypes
-        )
+                result = subprocess.run(
+                    ['osascript', '-e', script],
+                    capture_output=True,
+                    text=True,
+                    timeout=300  # 5分钟超时
+                )
 
-        if filename:
-            self.load_image(filename)
+                if result.returncode == 0:
+                    filename = result.stdout.strip()
+                    if filename and os.path.exists(filename):
+                        # 延迟加载以避免对话框关闭时的事件冲突
+                        self.root.after(200, lambda: self.load_image(filename))
+                else:
+                    # 用户取消选择
+                    return
+            else:
+                # 非macOS系统使用标准tkinter对话框
+                filetypes = [
+                    ("所有文件", "*.*"),
+                    ("JPEG图片", "*.jpg *.jpeg"),
+                    ("PNG图片", "*.png"),
+                ]
+
+                if RAW_SUPPORT:
+                    raw_extensions = "*.cr2 *.cr3 *.nef *.nrw *.arw *.srf *.dng *.raf *.orf *.rw2 *.pef *.srw *.raw *.rwl"
+                    filetypes.insert(1, ("RAW格式", raw_extensions))
+
+                filename = filedialog.askopenfilename(
+                    title="选择图片",
+                    filetypes=filetypes,
+                    initialdir=os.path.expanduser("~")
+                )
+
+                if filename:
+                    self.load_image(filename)
+
+        except subprocess.TimeoutExpired:
+            messagebox.showwarning("超时", "文件选择超时")
+        except Exception as e:
+            print(f"打开文件对话框失败: {e}")
+            import traceback
+            traceback.print_exc()
+            messagebox.showerror("错误", f"打开文件选择器失败:\n{e}")
 
     def load_image(self, filepath):
         """加载并显示图片"""
@@ -1526,6 +1525,10 @@ class SuperBirdIDGUI:
 
             self.current_image_path = filepath
 
+            # 显示加载状态
+            self.update_status("正在加载图片...")
+            self.root.update_idletasks()
+
             # 使用核心加载函数
             self.current_image = load_image(filepath)
 
@@ -1533,14 +1536,7 @@ class SuperBirdIDGUI:
             if self.current_image is None:
                 raise ValueError("图片加载失败，返回空对象")
 
-            # 隐藏占位符，显示图片
-            self.upload_placeholder.pack_forget()
-            self.image_label.pack()
-
-            # 显示在界面上
-            self.display_image(self.current_image)
-
-            # 更新信息
+            # 更新信息（在显示图片之前）
             file_size = os.path.getsize(filepath) / 1024 / 1024  # MB
             file_ext = os.path.splitext(filepath)[1].upper()
             info_text = f"✓ {os.path.basename(filepath)} · "
@@ -1548,10 +1544,28 @@ class SuperBirdIDGUI:
             info_text += f"{file_ext[1:]} · {file_size:.2f} MB"
 
             self.info_label.config(text=info_text, fg=self.colors['text_secondary'])
-            self.update_status(f"✓ 已加载图片")
 
             # 清空之前的结果
             self.clear_results()
+
+            # 延迟显示图片（避免tkinter崩溃）
+            def _delayed_display():
+                try:
+                    # 隐藏占位符，显示图片
+                    self.upload_placeholder.pack_forget()
+                    self.image_label.pack()
+
+                    # 显示在界面上
+                    self.display_image(self.current_image)
+
+                    self.update_status(f"✓ 已加载图片")
+                except Exception as e:
+                    print(f"延迟显示失败: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+            # 使用更长的延迟确保事件处理完成
+            self.root.after(100, _delayed_display)
 
         except FileNotFoundError as e:
             messagebox.showerror("文件错误", str(e))
@@ -1744,44 +1758,69 @@ class SuperBirdIDGUI:
                 os.unlink(temp_path)
 
     def display_image(self, pil_image):
-        """在界面上显示图片 - 自适应窗口大小（优化版）"""
-        try:
-            # 获取容器实际可用空间
-            self.root.update_idletasks()  # 确保获取到正确的尺寸
-            container_width = self.image_container.winfo_width()
-            container_height = self.image_container.winfo_height()
+        """在界面上显示图片 - 自适应窗口大小（优化版，支持大尺寸RAW）"""
+        def _do_display():
+            """实际的显示操作（在主线程idle时执行）"""
+            try:
+                # 获取容器实际可用空间
+                self.root.update_idletasks()
+                container_width = self.image_container.winfo_width()
+                container_height = self.image_container.winfo_height()
 
-            # 如果容器尺寸未初始化，使用窗口尺寸的百分比
-            if container_width <= 1:
-                container_width = int(self.root.winfo_width() * 0.7)
-            if container_height <= 1:
-                container_height = int(self.root.winfo_height() * 0.45)
+                # 如果容器尺寸未初始化，使用窗口尺寸的百分比
+                if container_width <= 1:
+                    container_width = int(self.root.winfo_width() * 0.7)
+                if container_height <= 1:
+                    container_height = int(self.root.winfo_height() * 0.45)
 
-            # 保持图片比例缩放（使用更高效的方法）
-            img_copy = pil_image.copy()
-            img_copy.thumbnail((container_width - 40, container_height - 40), Image.Resampling.LANCZOS)
+                # 保持图片比例缩放（使用更高效的方法）
+                img_copy = pil_image.copy()
+                img_copy.thumbnail((container_width - 40, container_height - 40), Image.Resampling.LANCZOS)
 
-            # 释放旧的PhotoImage引用
-            if hasattr(self, 'current_photo') and self.current_photo:
+                # 确保缩放后的图片不为空
+                if img_copy.size[0] == 0 or img_copy.size[1] == 0:
+                    raise ValueError("图片缩放后尺寸为0")
+
+                # 释放旧的PhotoImage引用
+                if hasattr(self, 'current_photo') and self.current_photo:
+                    try:
+                        del self.current_photo
+                    except Exception:
+                        pass
+
+                # 转换为PhotoImage（添加额外的错误处理）
                 try:
-                    del self.current_photo
-                except Exception:
-                    pass
+                    # 确保图片是RGB模式
+                    if img_copy.mode != 'RGB':
+                        img_copy = img_copy.convert('RGB')
+                    self.current_photo = ImageTk.PhotoImage(img_copy)
+                except Exception as photo_error:
+                    print(f"PhotoImage创建失败: {photo_error}，尝试进一步缩小...")
+                    # 如果还是失败，尝试进一步缩小
+                    img_copy.thumbnail((600, 600), Image.Resampling.LANCZOS)
+                    if img_copy.mode != 'RGB':
+                        img_copy = img_copy.convert('RGB')
+                    self.current_photo = ImageTk.PhotoImage(img_copy)
 
-            # 转换为PhotoImage
-            self.current_photo = ImageTk.PhotoImage(img_copy)
+                # 更新标签
+                if self.current_photo:
+                    self.image_label.config(image=self.current_photo,
+                                           relief='solid',
+                                           bd=2,
+                                           borderwidth=2)
 
-            # 更新标签
-            self.image_label.config(image=self.current_photo,
-                                   relief='solid',
-                                   bd=2,
-                                   borderwidth=2)
+            except Exception as e:
+                # 如果显示失败，使用占位符
+                print(f"图片显示失败: {e}")
+                import traceback
+                traceback.print_exc()
+                self.image_label.pack_forget()
+                self.upload_placeholder.pack(fill=tk.BOTH, expand=True)
 
-        except Exception as e:
-            # 如果显示失败，使用占位符
-            self.image_label.pack_forget()
-            self.upload_placeholder.pack(fill=tk.BOTH, expand=True)
-            raise ValueError(f"图片显示失败: {e}")
+        # 使用after延迟执行，避免在事件处理器中直接创建PhotoImage
+        # 这是macOS tkinter的已知问题的解决方案
+        # 使用更长的延迟 (50ms) 以确保在macOS Python 3.13上稳定
+        self.root.after(50, _do_display)
 
     def clear_results(self):
         """清空结果显示"""

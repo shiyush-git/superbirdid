@@ -14,10 +14,14 @@ ultralytics>=8.0.0
 
 # RAW格式支持
 rawpy>=0.18.0
+imageio>=2.0.0
 
 # EXIF数据读取和写入
 exifread>=3.0.0
 PyExifTool>=0.5.0
+
+# 模型加密解密
+cryptography>=40.0.0
 
 # HTTP API服务器
 Flask>=3.0.0

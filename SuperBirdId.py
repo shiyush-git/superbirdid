@@ -31,20 +31,17 @@ try:
         # 打包后的环境（PyInstaller）
         base_path = sys._MEIPASS
         EXIFTOOL_PATH = os.path.join(base_path, 'exiftool_bundle', 'exiftool')
-        # 设置可执行权限
-        if os.path.exists(EXIFTOOL_PATH):
-            os.chmod(EXIFTOOL_PATH, 0o755)
-            # 同时设置 lib 目录权限，确保 Perl 模块可访问
-            lib_dir = os.path.join(base_path, 'exiftool_bundle', 'lib')
-            if os.path.exists(lib_dir):
-                os.chmod(lib_dir, 0o755)
+        # 打包环境不需要设置权限，权限应该在打包时或安装时已设置好
     else:
         # 开发环境，使用项目内的完整 exiftool bundle
         base_path = os.path.dirname(os.path.abspath(__file__))
         EXIFTOOL_PATH = os.path.join(base_path, 'exiftool_bundle', 'exiftool')
-        # 设置可执行权限
+        # 开发环境下设置可执行权限
         if os.path.exists(EXIFTOOL_PATH):
-            os.chmod(EXIFTOOL_PATH, 0o755)
+            try:
+                os.chmod(EXIFTOOL_PATH, 0o755)
+            except PermissionError:
+                pass  # 如果没有权限，忽略（文件可能已经有正确权限）
 
 except ImportError:
     EXIFTOOL_AVAILABLE = False
