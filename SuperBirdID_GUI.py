@@ -871,69 +871,66 @@ class SuperBirdIDGUI:
         self.region_menu_quick.bind('<<ComboboxSelected>>', self.on_region_changed)
         
         buttons_grid = tk.Frame(button_frame, bg=self.colors['bg'])
-        buttons_grid.pack(fill=tk.X, pady=(5, 0))
-
-        # 配置4列，每列等宽
+        buttons_grid.pack(fill=tk.X, pady=(5, 0))  
+        
         buttons_grid.grid_columnconfigure(0, weight=1, uniform='button')
         buttons_grid.grid_columnconfigure(1, weight=1, uniform='button')
-        buttons_grid.grid_columnconfigure(2, weight=1, uniform='button')
-        buttons_grid.grid_columnconfigure(3, weight=1, uniform='button')
 
         self.open_btn = tk.Button(buttons_grid,
                                 text="📁 选择图片",
-                                font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'), 
                                 bg='#ffffff',
                                 fg='#000000',
                                 activebackground='#f0f0f0',
                                 activeforeground='#000000',
                                 relief='solid',
                                 bd=2,
-                                padx=8, pady=6,
+                                padx=15, pady=8,  
                                 cursor='hand2',
                                 command=self.open_image)
-        self.open_btn.grid(row=0, column=0, padx=3, pady=4, sticky='ew')
+        self.open_btn.grid(row=0, column=0, padx=5, pady=4, sticky='ew')  
 
         self.recognize_btn = tk.Button(buttons_grid,
                                     text="🔍 开始识别",
-                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                    font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'),  
                                     bg='#ffffff',
                                     fg='#000000',
                                     activebackground='#f0f0f0',
                                     activeforeground='#000000',
                                     relief='solid',
                                     bd=2,
-                                    padx=8, pady=6,
+                                    padx=15, pady=8,  
                                     cursor='hand2',
                                     command=self.start_recognition)
-        self.recognize_btn.grid(row=0, column=1, padx=3, pady=4, sticky='ew')
+        self.recognize_btn.grid(row=0, column=1, padx=5, pady=4, sticky='ew')  
 
         self.screenshot_btn = tk.Button(buttons_grid,
                                     text="📸 截图识别",
-                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                    font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'),  
                                     bg='#ffffff',
                                     fg='#000000',
                                     activebackground='#f0f0f0',
                                     activeforeground='#000000',
                                     relief='solid',
                                     bd=2,
-                                    padx=8, pady=6,
+                                    padx=15, pady=8,  
                                     cursor='hand2',
                                     command=self.screenshot_and_load)
-        self.screenshot_btn.grid(row=0, column=2, padx=3, pady=4, sticky='ew')
+        self.screenshot_btn.grid(row=1, column=0, padx=5, pady=4, sticky='ew')
 
         self.advanced_btn = tk.Button(buttons_grid,
                                     text="⚙️ 高级选项",
-                                    font=tkfont.Font(family='SF Pro Display', size=11, weight='bold'),
+                                    font=tkfont.Font(family='SF Pro Display', size=13, weight='bold'), 
                                     bg='#ffffff',
                                     fg='#000000',
                                     activebackground='#f0f0f0',
                                     activeforeground='#000000',
                                     relief='solid',
                                     bd=2,
-                                    padx=8, pady=6,
+                                    padx=15, pady=8,  
                                     cursor='hand2',
                                     command=self.toggle_advanced)
-        self.advanced_btn.grid(row=0, column=3, padx=3, pady=4, sticky='ew') 
+        self.advanced_btn.grid(row=1, column=1, padx=5, pady=4, sticky='ew') 
 
         # 悬停效果
         def create_button_hover_handlers(button, is_primary=False):
