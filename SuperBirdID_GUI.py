@@ -1577,19 +1577,20 @@ class SuperBirdIDGUI:
             messagebox.showerror("错误", f"加载图片失败:\n{type(e).__name__}: {e}")
 
     def screenshot_and_load(self):
-        """调用截图工具并加载截图（跨平台）"""
-        import subprocess
-        import tempfile
+        """调用截图工具并加载截图（跨平台 - 使用系统自带截图）"""
         import time
         
         try:
-            # 创建临时文件
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
-            temp_path = temp_file.name
-            temp_file.close()
-            
-            # macOS 使用系统原生截图
+            # macOS 使用系统原生截图（保存到文件）
             if self.is_macos:
+                import subprocess
+                import tempfile
+                
+                # 创建临时文件
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                temp_path = temp_file.name
+                temp_file.close()
+                
                 # 提示用户
                 self.update_status("请使用系统截图工具框选区域...")
                 
@@ -1641,112 +1642,104 @@ class SuperBirdIDGUI:
                         os.unlink(temp_path)
                     self.update_status("已取消截图")
             
-            # Windows 使用 PyQt6 截图工具
+            # Windows 使用系统自带截图工具（Win+Shift+S）
             else:
-                # 获取截图工具路径
-                if getattr(sys, 'frozen', False):
-                    # 打包后使用独立的 screenshot_tool.exe
-                    screenshot_tool_path = os.path.join(os.path.dirname(sys.executable), 'screenshot_tool.exe')
-                    use_exe = True
-                else:
-                    # 开发环境使用 py 脚本
-                    screenshot_tool_path = os.path.join(os.path.dirname(__file__), 'screenshot_tool.py')
-                    use_exe = False
+                self.update_status("请使用截图工具框选区域（Win+Shift+S）...")
                 
-                # 检查截图工具是否存在
-                if not os.path.exists(screenshot_tool_path):
-                    messagebox.showerror("错误", 
-                                    f"截图工具不存在\n请确保 screenshot_tool.exe 在程序目录中")
-                    return
-                
-                # 最小化主窗口
+                # 最小化窗口
                 self.root.iconify()
                 self.root.update()
-                
-                # 等待窗口最小化完成
-                import time
                 time.sleep(0.3)
                 
-                # 设置环境变量强制 UTF-8（仅开发环境需要）
-                env = os.environ.copy()
-                env['PYTHONIOENCODING'] = 'utf-8'
-                env['PYTHONUTF8'] = '1'
+                # 获取当前剪贴板内容（用于对比）
+                from PIL import ImageGrab
+                original_clipboard = None
+                try:
+                    original_clipboard = ImageGrab.grabclipboard()
+                except:
+                    pass
                 
-                # 调用截图工具
-                if use_exe:
-                    # 打包后：直接运行独立的 exe
-                    result = subprocess.run(
-                        [screenshot_tool_path, temp_path],
-                        capture_output=True,
-                        text=True,
-                        encoding='utf-8',
-                        errors='replace',
-                        timeout=60,
-                        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-                    )
-                else:
-                    # 开发环境：用 python 运行脚本
-                    result = subprocess.run(
-                        [sys.executable, screenshot_tool_path, temp_path],
-                        capture_output=True,
-                        text=True,
-                        encoding='utf-8',
-                        errors='replace',
-                        timeout=60,
-                        env=env,
-                        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
-                    )
+                # 模拟按下 Win+Shift+S
+                try:
+                    import pyautogui
+                    pyautogui.hotkey('win', 'shift', 's')
+                except ImportError:
+                    # 如果 pyautogui 不可用，尝试使用 keyboard 库
+                    try:
+                        import keyboard
+                        keyboard.press_and_release('win+shift+s')
+                    except ImportError:
+                        # 如果两个库都不可用，使用 ctypes（Windows API）
+                        import ctypes
+                        # VK_LWIN = 0x5B, VK_SHIFT = 0x10, VK_S = 0x53
+                        ctypes.windll.user32.keybd_event(0x5B, 0, 0, 0)  # Win down
+                        ctypes.windll.user32.keybd_event(0x10, 0, 0, 0)  # Shift down
+                        ctypes.windll.user32.keybd_event(0x53, 0, 0, 0)  # S down
+                        time.sleep(0.05)
+                        ctypes.windll.user32.keybd_event(0x53, 0, 2, 0)  # S up
+                        ctypes.windll.user32.keybd_event(0x10, 0, 2, 0)  # Shift up
+                        ctypes.windll.user32.keybd_event(0x5B, 0, 2, 0)  # Win up
                 
-                # 恢复主窗口
+                # 等待用户完成截图（最多30秒）
+                max_wait_time = 30
+                check_interval = 0.5
+                elapsed_time = 0
+                screenshot_completed = False
+                
+                while elapsed_time < max_wait_time:
+                    time.sleep(check_interval)
+                    elapsed_time += check_interval
+                    
+                    # 检查剪贴板是否有新图片
+                    try:
+                        current_clipboard = ImageGrab.grabclipboard()
+                        if current_clipboard is not None and current_clipboard != original_clipboard:
+                            # 剪贴板有新图片，用户完成了截图
+                            screenshot_completed = True
+                            break
+                    except:
+                        continue
+                
+                # 恢复窗口
                 self.root.deiconify()
                 self.root.lift()
                 self.root.focus_force()
                 
-                # 检查截图是否成功
-                if "SUCCESS:" in result.stdout and os.path.exists(temp_path):
-                    if os.path.getsize(temp_path) > 0:
-                        if hasattr(self, '_temp_screenshot_file') and os.path.exists(self._temp_screenshot_file):
-                            try:
-                                os.unlink(self._temp_screenshot_file)
-                            except OSError:
-                                pass
+                if screenshot_completed:
+                    # 从剪贴板加载截图
+                    try:
+                        import tempfile
+                        clipboard_image = ImageGrab.grabclipboard()
                         
-                        self._temp_screenshot_file = temp_path
-                        
-                        # 加载截图
-                        self.load_image(temp_path)
-                        self.update_status("✓ 截图已加载")
-                        
-                        # 自动开始识别
-                        self.root.after(100, self.start_recognition)
-                    else:
-                        os.unlink(temp_path)
-                        self.update_status("已取消截图")
-                elif "CANCELLED" in result.stdout:
-                    if os.path.exists(temp_path):
-                        os.unlink(temp_path)
-                    self.update_status("已取消截图")
+                        if clipboard_image:
+                            # 保存到临时文件
+                            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                            temp_path = temp_file.name
+                            clipboard_image.save(temp_path, 'PNG')
+                            temp_file.close()
+                            
+                            # 清理旧的临时文件
+                            if hasattr(self, '_temp_screenshot_file') and os.path.exists(self._temp_screenshot_file):
+                                try:
+                                    os.unlink(self._temp_screenshot_file)
+                                except OSError:
+                                    pass
+                            
+                            self._temp_screenshot_file = temp_path
+                            
+                            # 加载截图
+                            self.load_image(temp_path)
+                            self.update_status("✓ 截图已加载")
+                            
+                            # 自动开始识别
+                            self.root.after(100, self.start_recognition)
+                        else:
+                            self.update_status("获取截图失败")
+                    except Exception as e:
+                        self.update_status(f"加载截图失败: {e}")
                 else:
-                    if os.path.exists(temp_path):
-                        os.unlink(temp_path)
-                    error_msg = result.stderr if result.stderr else "未知错误"
-                    messagebox.showerror("截图失败", f"截图工具返回错误:\n{error_msg}")
-        
-        except subprocess.TimeoutExpired:
-            self.root.deiconify()
-            messagebox.showerror("超时", "截图操作超时")
-            if 'temp_path' in locals() and os.path.exists(temp_path):
-                os.unlink(temp_path)
-        
-        except FileNotFoundError as e:
-            self.root.deiconify()
-            if self.is_macos:
-                messagebox.showerror("错误", 
-                    "找不到 screencapture 命令\n请确认您的 macOS 系统是否正常")
-            else:
-                messagebox.showerror("错误", f"截图工具不存在:\n{e}")
-            if 'temp_path' in locals() and os.path.exists(temp_path):
-                os.unlink(temp_path)
+                    # 超时或用户取消
+                    self.update_status("已取消截图或超时")
         
         except Exception as e:
             self.root.deiconify()
