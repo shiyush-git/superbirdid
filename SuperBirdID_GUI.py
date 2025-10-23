@@ -4,7 +4,7 @@ SuperBirdID - 简化GUI版本
 极简设计，一键识别，卡片式结果展示
 """
 
-__version__ = "3.0.2"
+__version__ = "3.2.1"
 
 # 禁用 matplotlib 字体管理器，避免启动时构建字体缓存导致卡顿
 import os
@@ -298,13 +298,33 @@ class SuperBirdIDGUI:
             regions_data = self.load_regions_data()
             if regions_data and 'countries' in regions_data:
                 # 从 ebird_regions.json 读取国家列表
-                # 注意：countries 已经在数据文件中按优先级排序好了
-                for country in regions_data['countries']:
+                # 按鸟种数量降序排序（有离线数据的国家优先，然后按字母排序）
+                countries_list = regions_data['countries']
+
+                # 分为两组：有鸟种数据的和无数据的
+                with_species = [c for c in countries_list if c.get('species_count', 0) > 0]
+                without_species = [c for c in countries_list if c.get('species_count', 0) == 0]
+
+                # 有数据的按鸟种数量降序排序
+                with_species.sort(key=lambda x: x.get('species_count', 0), reverse=True)
+
+                # 无数据的按英文名字母排序
+                without_species.sort(key=lambda x: x.get('name', ''))
+
+                # 合并：先显示有数据的（按鸟种数量），再显示无数据的（按字母）
+                sorted_countries = with_species + without_species
+
+                for country in sorted_countries:
                     code = country['code']
                     name = country['name']
-                    # 优先使用中文名，如果没有则使用英文名
-                    cn_name = country.get('name_cn', name)
-                    display_name = f"{cn_name} ({code})"
+                    # 优先使用中文名，如果没有或为None则使用英文名
+                    cn_name = country.get('name_cn') or name
+                    species_count = country.get('species_count', 0)
+                    # 有鸟种数据的国家显示数量
+                    if species_count > 0:
+                        display_name = f"{cn_name} ({code}) - {species_count}种"
+                    else:
+                        display_name = f"{cn_name} ({code})"
                     countries[display_name] = code
         except Exception as e:
             print(f"加载国家列表失败: {e}")
@@ -323,12 +343,32 @@ class SuperBirdIDGUI:
 
     def save_settings(self):
         """保存当前设置"""
+        # 获取国家代码（用于 API）
+        selected_country_display = self.selected_country.get()
+        country_code = None
+
+        if selected_country_display not in ["自动检测", "全球模式"]:
+            country_code = self.country_list.get(selected_country_display)
+
+        # 获取区域代码（如果有选择具体区域）
+        selected_region_display = self.selected_region.get()
+        region_code = None
+
+        if selected_region_display and selected_region_display != "整个国家":
+            # 从 "South Australia (AU-SA)" 提取 AU-SA
+            import re
+            match = re.search(r'\(([A-Z]{2}-[A-Z]+)\)', selected_region_display)
+            if match:
+                region_code = match.group(1)
+
         settings = {
             'use_yolo': self.use_yolo.get(),
             'use_gps': self.use_gps.get(),
             'use_ebird': self.use_ebird.get(),
-            'selected_country': self.selected_country.get(),
-            'selected_region': self.selected_region.get(),
+            'selected_country': selected_country_display,  # 显示名称（用于 GUI）
+            'selected_region': selected_region_display,    # 显示名称（用于 GUI）
+            'country_code': country_code,                  # 国家代码（用于 API）
+            'region_code': region_code,                    # 区域代码（用于 API）
             'temperature': self.temperature.get()
         }
         try:
@@ -1234,7 +1274,7 @@ class SuperBirdIDGUI:
                                        width=30,
                                        font=self.fonts['small'])
             self.country_menu.pack(side=tk.LEFT)
-            self.country_menu.set("自动检测")
+            # 不要硬编码设置，使用从配置文件加载的值（textvariable已绑定）
             self.country_menu.bind('<<ComboboxSelected>>', self.on_country_changed)
 
             # 区域选择下拉菜单
@@ -1255,8 +1295,11 @@ class SuperBirdIDGUI:
                                            width=30,
                                            font=self.fonts['small'])
             self.region_menu.pack(side=tk.LEFT)
-            self.region_menu.set("整个国家")
+            # 不要硬编码设置，使用从配置文件加载的值（textvariable已绑定）
             self.region_menu.bind('<<ComboboxSelected>>', self.on_region_changed)
+
+            # 根据加载的国家设置，初始化区域列表
+            self.on_country_changed()
 
         # 温度参数设置
         temp_frame = tk.Frame(content, bg=self.colors['card'])

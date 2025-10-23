@@ -9,7 +9,7 @@ local LrView = import 'LrView'
 local LrBinding = import 'LrBinding'
 
 -- 版本信息
-local VERSION = "v2.0.0 - SuperBirdID本地版"
+local VERSION = "v3.2.1 - 慧眼识鸟 Lightroom 插件"
 
 local myLogger = LrLogger( 'SuperBirdIDExportServiceProvider' )
 myLogger:enable( "logfile" )

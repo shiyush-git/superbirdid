@@ -2,7 +2,7 @@
 SuperBirdID - 高精度鸟类识别系统
 """
 
-__version__ = "3.0.1"
+__version__ = "3.2.1"
 
 import torch
 import numpy as np
@@ -877,72 +877,102 @@ def load_image(image_path):
         except Exception as e:
             raise Exception(f"图像加载失败: {e}")
 
+# GPS 查询缓存（减少重复计算）
+_gps_cache = {}
+
 def get_region_from_gps(latitude, longitude):
     """
-    根据GPS坐标确定地理区域和对应的eBird国家
-    返回: (region, country_code, region_info)
+    根据GPS坐标确定地理区域和对应的eBird国家代码
+    优先使用离线地理数据库，失败时回退到粗粒度判断
+    返回: (region_name, country_code, region_info)
     """
     if latitude is None or longitude is None:
         return None, None, "无GPS坐标"
 
-    # 基于GPS坐标的地理区域划分
+    # 检查缓存（四舍五入到小数点后2位，约1km精度）
+    cache_key = (round(latitude, 2), round(longitude, 2))
+    if cache_key in _gps_cache:
+        return _gps_cache[cache_key]
+
+    # 方法 1: 使用 reverse_geocoder 离线数据库（优先）
+    try:
+        import reverse_geocoder as rg
+        results = rg.search((latitude, longitude), mode=1)  # mode=1: 单点查询
+        if results and len(results) > 0:
+            result = results[0]
+            country_code = result.get('cc', '').upper()  # ISO 国家代码
+            location_name = result.get('name', '')  # 地点名称
+
+            if country_code:
+                region_info = f"GPS定位: {location_name}, {country_code} ({latitude:.3f}, {longitude:.3f})"
+                result_tuple = (location_name, country_code, region_info)
+                _gps_cache[cache_key] = result_tuple
+                return result_tuple
+    except Exception as e:
+        print(f"DEBUG: reverse_geocoder 失败: {e}")
+        # 继续尝试 fallback 方法
+
+    # 方法 2: 回退到粗粒度地理区域判断（保留作为 fallback）
     region_map = [
         # 澳洲和大洋洲
         {
             'name': 'Australia',
-            'country': 'australia',
-            'bounds': [(-50, 110), (-10, 180)],  # 南纬10-50度，东经110-180度
-            'description': '澳大利亚'
+            'country': 'AU',
+            'bounds': [(-50, 110), (-10, 180)],
+            'description': '澳大利亚（粗略）'
         },
         # 亚洲
         {
             'name': 'Asia',
-            'country': 'china',
-            'bounds': [(-10, 60), (80, 180)],    # 南纬10度到北纬80度，东经60-180度
-            'description': '亚洲'
+            'country': 'CN',
+            'bounds': [(-10, 60), (80, 180)],
+            'description': '亚洲（粗略）'
         },
         # 欧洲
         {
             'name': 'Europe',
-            'country': 'germany',
-            'bounds': [(35, -25), (80, 60)],     # 北纬35-80度，西经25度到东经60度
-            'description': '欧洲'
+            'country': 'DE',
+            'bounds': [(35, -25), (80, 60)],
+            'description': '欧洲（粗略）'
         },
         # 北美洲
         {
             'name': 'North_America',
-            'country': 'usa',
-            'bounds': [(15, -170), (80, -50)],   # 北纬15-80度，西经170-50度
-            'description': '北美洲'
+            'country': 'US',
+            'bounds': [(15, -170), (80, -50)],
+            'description': '北美洲（粗略）'
         },
         # 南美洲
         {
             'name': 'South_America',
-            'country': 'brazil',
-            'bounds': [(-60, -90), (15, -30)],   # 南纬60度到北纬15度，西经90-30度
-            'description': '南美洲'
+            'country': 'BR',
+            'bounds': [(-60, -90), (15, -30)],
+            'description': '南美洲（粗略）'
         },
         # 非洲
         {
             'name': 'Africa',
-            'country': 'south_africa',
-            'bounds': [(-40, -20), (40, 55)],    # 南纬40度到北纬40度，西经20度到东经55度
-            'description': '非洲'
+            'country': 'ZA',
+            'bounds': [(-40, -20), (40, 55)],
+            'description': '非洲（粗略）'
         }
     ]
 
     for region in region_map:
         (lat_min, lon_min), (lat_max, lon_max) = region['bounds']
 
-        # 检查坐标是否在区域内
         if (lat_min <= latitude <= lat_max and
             lon_min <= longitude <= lon_max):
 
             region_info = f"GPS定位: {region['description']} ({latitude:.3f}, {longitude:.3f})"
-            return region['name'], region['country'], region_info
+            result_tuple = (region['name'], region['country'], region_info)
+            _gps_cache[cache_key] = result_tuple
+            return result_tuple
 
-    # 默认全球模式
-    return None, None, f"未知区域 ({latitude:.3f}, {longitude:.3f})"
+    # 默认返回
+    result_tuple = (None, None, f"未知区域 ({latitude:.3f}, {longitude:.3f})")
+    _gps_cache[cache_key] = result_tuple
+    return result_tuple
 
 def get_bird_region(species_name):
     """根据鸟类名称推断地理区域"""

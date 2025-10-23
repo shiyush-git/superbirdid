@@ -41,7 +41,8 @@
           "code": "AU-WA",
           "name": "Western Australia"
         }
-      ]
+      ],
+      "species_count": 964
     },
     {
       "code": "US",
@@ -254,7 +255,8 @@
           "code": "US-WY",
           "name": "Wyoming"
         }
-      ]
+      ],
+      "species_count": 1747
     },
     {
       "code": "CN",
@@ -387,7 +389,8 @@
           "code": "CN-33",
           "name": "Zhejiang"
         }
-      ]
+      ],
+      "species_count": 1427
     },
     {
       "code": "GB",
@@ -412,7 +415,8 @@
           "code": "GB-WLS",
           "name": "Wales"
         }
-      ]
+      ],
+      "species_count": 955
     },
     {
       "code": "CA",
@@ -473,7 +477,8 @@
           "code": "CA-YT",
           "name": "Yukon Territory"
         }
-      ]
+      ],
+      "species_count": 939
     },
     {
       "code": "TW",
@@ -570,7 +575,8 @@
           "code": "TW-YUN",
           "name": "Yunlin County"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "HK",
@@ -578,7 +584,8 @@
       "name_cn": "香港",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "MO",
@@ -586,7 +593,8 @@
       "name_cn": "澳门",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "BR",
@@ -703,7 +711,8 @@
           "code": "BR-TO",
           "name": "Tocantins"
         }
-      ]
+      ],
+      "species_count": 1874
     },
     {
       "code": "CO",
@@ -844,7 +853,8 @@
           "code": "CO-VID",
           "name": "Vichada"
         }
-      ]
+      ],
+      "species_count": 1983
     },
     {
       "code": "PE",
@@ -953,7 +963,8 @@
           "code": "PE-UCA",
           "name": "Ucayali"
         }
-      ]
+      ],
+      "species_count": 1920
     },
     {
       "code": "EC",
@@ -1058,7 +1069,8 @@
           "code": "EC-Z",
           "name": "Zamora-Chinchipe"
         }
-      ]
+      ],
+      "species_count": 1711
     },
     {
       "code": "IN",
@@ -1215,7 +1227,8 @@
           "code": "IN-WB",
           "name": "West Bengal"
         }
-      ]
+      ],
+      "species_count": 1447
     },
     {
       "code": "ID",
@@ -1252,7 +1265,8 @@
           "code": "ID-SM",
           "name": "Sumatera"
         }
-      ]
+      ],
+      "species_count": 1806
     },
     {
       "code": "MX",
@@ -1389,7 +1403,8 @@
           "code": "MX-ZAC",
           "name": "Zacatecas"
         }
-      ]
+      ],
+      "species_count": 1218
     },
     {
       "code": "VE",
@@ -1498,7 +1513,8 @@
           "code": "VE-V",
           "name": "Zulia"
         }
-      ]
+      ],
+      "species_count": 1415
     },
     {
       "code": "BO",
@@ -1543,7 +1559,8 @@
           "code": "BO-T",
           "name": "Tarija"
         }
-      ]
+      ],
+      "species_count": 1437
     },
     {
       "code": "AR",
@@ -1648,7 +1665,8 @@
           "code": "AR-T",
           "name": "Tucumán"
         }
-      ]
+      ],
+      "species_count": 1096
     },
     {
       "code": "ZA",
@@ -1693,7 +1711,8 @@
           "code": "ZA-WC",
           "name": "Western Cape"
         }
-      ]
+      ],
+      "species_count": 893
     },
     {
       "code": "KE",
@@ -1734,7 +1753,8 @@
           "code": "KE-800",
           "name": "Western"
         }
-      ]
+      ],
+      "species_count": 1145
     },
     {
       "code": "TZ",
@@ -1867,7 +1887,8 @@
           "code": "TZ-15",
           "name": "Zanzibar West"
         }
-      ]
+      ],
+      "species_count": 1106
     },
     {
       "code": "PG",
@@ -1956,7 +1977,8 @@
           "code": "PG-WHM",
           "name": "Western Highlands"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MG",
@@ -1989,7 +2011,8 @@
           "code": "MG-U",
           "name": "Toliara"
         }
-      ]
+      ],
+      "species_count": 274
     },
     {
       "code": "JP",
@@ -2186,7 +2209,8 @@
           "code": "JP-19",
           "name": "Yamanashi"
         }
-      ]
+      ],
+      "species_count": 679
     },
     {
       "code": "KR",
@@ -2259,7 +2283,8 @@
           "code": "KR-31",
           "name": "Ulsan-Kwangyokshi"
         }
-      ]
+      ],
+      "species_count": 539
     },
     {
       "code": "TH",
@@ -2576,7 +2601,8 @@
           "code": "TH-35",
           "name": "Yasothon"
         }
-      ]
+      ],
+      "species_count": 1145
     },
     {
       "code": "VN",
@@ -2841,7 +2867,8 @@
           "code": "VN-06",
           "name": "Yen Bai"
         }
-      ]
+      ],
+      "species_count": 877
     },
     {
       "code": "PH",
@@ -3178,7 +3205,8 @@
           "code": "PH-ZAS",
           "name": "Zamboanga del Sur"
         }
-      ]
+      ],
+      "species_count": 743
     },
     {
       "code": "MY",
@@ -3251,7 +3279,8 @@
           "code": "MY-16",
           "name": "Wilayah Persekutuan Putrajaya"
         }
-      ]
+      ],
+      "species_count": 870
     },
     {
       "code": "SG",
@@ -3259,7 +3288,8 @@
       "name_cn": "新加坡",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 613
     },
     {
       "code": "NP",
@@ -3296,7 +3326,8 @@
           "code": "NP-7",
           "name": "Sudurpaschim"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "FR",
@@ -3357,7 +3388,8 @@
           "code": "FR-IDF",
           "name": "Île-de-France"
         }
-      ]
+      ],
+      "species_count": 694
     },
     {
       "code": "DE",
@@ -3430,7 +3462,8 @@
           "code": "DE-TH",
           "name": "Thüringen"
         }
-      ]
+      ],
+      "species_count": 638
     },
     {
       "code": "ES",
@@ -3515,7 +3548,8 @@
           "code": "ES-VC",
           "name": "Valenciana, Comunidad"
         }
-      ]
+      ],
+      "species_count": 855
     },
     {
       "code": "IT",
@@ -3604,7 +3638,8 @@
           "code": "IT-34",
           "name": "Veneto"
         }
-      ]
+      ],
+      "species_count": 581
     },
     {
       "code": "NL",
@@ -3661,7 +3696,8 @@
           "code": "NL-ZH",
           "name": "Zuid-Holland"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "NO",
@@ -3746,7 +3782,8 @@
           "code": "NO-01",
           "name": "Østfold"
         }
-      ]
+      ],
+      "species_count": 523
     },
     {
       "code": "SE",
@@ -3839,7 +3876,8 @@
           "code": "SE-E",
           "name": "Östergötlands län [SE-05]"
         }
-      ]
+      ],
+      "species_count": 564
     },
     {
       "code": "FI",
@@ -3924,7 +3962,8 @@
           "code": "FI-01",
           "name": "Åland"
         }
-      ]
+      ],
+      "species_count": 496
     },
     {
       "code": "CR",
@@ -3961,7 +4000,8 @@
           "code": "CR-SJ",
           "name": "San José"
         }
-      ]
+      ],
+      "species_count": 966
     },
     {
       "code": "PA",
@@ -4018,7 +4058,8 @@
           "code": "PA-9",
           "name": "Veraguas"
         }
-      ]
+      ],
+      "species_count": 1032
     },
     {
       "code": "CL",
@@ -4091,7 +4132,8 @@
           "code": "CL-NB",
           "name": "Ñuble"
         }
-      ]
+      ],
+      "species_count": 610
     },
     {
       "code": "NZ",
@@ -4168,12 +4210,13 @@
           "code": "NZ-WTC",
           "name": "West Coast"
         }
-      ]
+      ],
+      "species_count": 404
     },
     {
       "code": "AF",
       "name": "Afghanistan",
-      "name_cn": null,
+      "name_cn": "阿富汗",
       "has_regions": true,
       "regions_count": 34,
       "regions": [
@@ -4313,20 +4356,22 @@
           "code": "AF-ZAB",
           "name": "Zabol"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AS",
       "name": "American Samoa",
-      "name_cn": null,
+      "name_cn": "美属萨摩亚",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "AD",
       "name": "Andorra",
-      "name_cn": null,
+      "name_cn": "安道尔",
       "has_regions": true,
       "regions_count": 7,
       "regions": [
@@ -4358,20 +4403,22 @@
           "code": "AD-06",
           "name": "Sant Julià de Lòria"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AI",
       "name": "Anguilla",
-      "name_cn": null,
+      "name_cn": "安圭拉",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "AG",
       "name": "Antigua and Barbuda",
-      "name_cn": null,
+      "name_cn": "安提瓜和巴布达",
       "has_regions": true,
       "regions_count": 8,
       "regions": [
@@ -4407,28 +4454,31 @@
           "code": "AG-08",
           "name": "Saint Philip"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AW",
       "name": "Aruba",
-      "name_cn": null,
+      "name_cn": "阿鲁巴岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "AC",
       "name": "Ashmore and Cartier Islands",
-      "name_cn": null,
+      "name_cn": "阿什莫尔和卡捷群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "BS",
       "name": "Bahamas",
-      "name_cn": null,
+      "name_cn": "巴哈马",
       "has_regions": true,
       "regions_count": 22,
       "regions": [
@@ -4520,12 +4570,13 @@
           "code": "BS-RS",
           "name": "South Eleuthera"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BB",
       "name": "Barbados",
-      "name_cn": null,
+      "name_cn": "巴巴多斯",
       "has_regions": true,
       "regions_count": 11,
       "regions": [
@@ -4573,36 +4624,40 @@
           "code": "BB-11",
           "name": "Saint Thomas"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BM",
       "name": "Bermuda",
-      "name_cn": null,
+      "name_cn": "百慕大",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "BV",
       "name": "Bouvet Island",
-      "name_cn": null,
+      "name_cn": "布韦岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "IO",
       "name": "British Indian Ocean Territory",
-      "name_cn": null,
+      "name_cn": "英属印度洋领地",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "CV",
       "name": "Cape Verde",
-      "name_cn": null,
+      "name_cn": "佛得角",
       "has_regions": true,
       "regions_count": 2,
       "regions": [
@@ -4614,12 +4669,13 @@
           "code": "CV-S",
           "name": "Ilhas de Sotavento"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BQ",
       "name": "Caribbean Netherlands",
-      "name_cn": null,
+      "name_cn": "加勒比荷兰",
       "has_regions": true,
       "regions_count": 3,
       "regions": [
@@ -4635,12 +4691,13 @@
           "code": "BQ-SE",
           "name": "Sint Eustatius"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "KY",
       "name": "Cayman Islands",
-      "name_cn": null,
+      "name_cn": "开曼群岛",
       "has_regions": true,
       "regions_count": 7,
       "regions": [
@@ -4672,36 +4729,40 @@
           "code": "KY-WB",
           "name": "West Bay"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CX",
       "name": "Christmas Island",
-      "name_cn": null,
+      "name_cn": "圣诞岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "CP",
       "name": "Clipperton Island",
-      "name_cn": null,
+      "name_cn": "克利珀顿岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "CC",
       "name": "Cocos (Keeling) Islands",
-      "name_cn": null,
+      "name_cn": "科科斯（基林）群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "KM",
       "name": "Comoros",
-      "name_cn": null,
+      "name_cn": "科摩罗",
       "has_regions": true,
       "regions_count": 3,
       "regions": [
@@ -4717,36 +4778,40 @@
           "code": "KM-M",
           "name": "Mohéli"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CK",
       "name": "Cook Islands",
-      "name_cn": null,
+      "name_cn": "库克群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "CS",
       "name": "Coral Sea Islands",
-      "name_cn": null,
+      "name_cn": "珊瑚海群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "CW",
       "name": "Curaçao",
-      "name_cn": null,
+      "name_cn": "库拉索岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "DM",
       "name": "Dominica",
-      "name_cn": null,
+      "name_cn": "多米尼加",
       "has_regions": true,
       "regions_count": 10,
       "regions": [
@@ -4790,12 +4855,13 @@
           "code": "DM-11",
           "name": "Saint Peter"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GQ",
       "name": "Equatorial Guinea",
-      "name_cn": null,
+      "name_cn": "赤道几内亚",
       "has_regions": true,
       "regions_count": 2,
       "regions": [
@@ -4807,28 +4873,31 @@
           "code": "GQ-I",
           "name": "Región Insular"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "FK",
       "name": "Falkland Islands (Malvinas)",
-      "name_cn": null,
+      "name_cn": "福克兰群岛（马尔维纳斯）",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "TF",
       "name": "French Southern and Antarctic Lands",
-      "name_cn": null,
+      "name_cn": "法属南部和南极土地",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "GD",
       "name": "Grenada",
-      "name_cn": null,
+      "name_cn": "格林纳达",
       "has_regions": true,
       "regions_count": 7,
       "regions": [
@@ -4860,36 +4929,40 @@
           "code": "GD-10",
           "name": "Southern Grenadine Islands"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GP",
       "name": "Guadeloupe",
-      "name_cn": null,
+      "name_cn": "瓜德罗普岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "GU",
       "name": "Guam",
-      "name_cn": null,
+      "name_cn": "关岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "GG",
       "name": "Guernsey",
-      "name_cn": null,
+      "name_cn": "根西岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "GW",
       "name": "Guinea-Bissau",
-      "name_cn": null,
+      "name_cn": "几内亚比绍",
       "has_regions": true,
       "regions_count": 4,
       "regions": [
@@ -4909,52 +4982,58 @@
           "code": "GW-S",
           "name": "Sul"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "HM",
       "name": "Heard Island and McDonald Islands",
-      "name_cn": null,
+      "name_cn": "赫德岛和麦克唐纳群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "XX",
       "name": "High Seas",
-      "name_cn": null,
+      "name_cn": "公海",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "IM",
       "name": "Isle of Man",
-      "name_cn": null,
+      "name_cn": "马恩岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "JE",
       "name": "Jersey",
-      "name_cn": null,
+      "name_cn": "泽西行政区",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "XK",
       "name": "Kosovo",
-      "name_cn": null,
+      "name_cn": "科索沃",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "LI",
       "name": "Liechtenstein",
-      "name_cn": null,
+      "name_cn": "列支敦士登公国",
       "has_regions": true,
       "regions_count": 11,
       "regions": [
@@ -5002,12 +5081,13 @@
           "code": "LI-11",
           "name": "Vaduz"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MV",
       "name": "Maldives",
-      "name_cn": null,
+      "name_cn": "马尔代夫",
       "has_regions": true,
       "regions_count": 21,
       "regions": [
@@ -5095,20 +5175,22 @@
           "code": "MV-04",
           "name": "Vaavu"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MQ",
       "name": "Martinique",
-      "name_cn": null,
+      "name_cn": "马提尼克",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "MU",
       "name": "Mauritius",
-      "name_cn": null,
+      "name_cn": "毛里求斯",
       "has_regions": true,
       "regions_count": 17,
       "regions": [
@@ -5180,36 +5262,40 @@
           "code": "MU-VP",
           "name": "Vacoas-Phoenix"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "YT",
       "name": "Mayotte",
-      "name_cn": null,
+      "name_cn": "马约特",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "MC",
       "name": "Monaco",
-      "name_cn": null,
+      "name_cn": "摩纳哥",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "MS",
       "name": "Montserrat",
-      "name_cn": null,
+      "name_cn": "蒙特塞拉特",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "NR",
       "name": "Nauru",
-      "name_cn": null,
+      "name_cn": "瑙鲁",
       "has_regions": true,
       "regions_count": 14,
       "regions": [
@@ -5269,28 +5355,31 @@
           "code": "NR-14",
           "name": "Yaren"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "NU",
       "name": "Niue",
-      "name_cn": null,
+      "name_cn": "纽埃",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "NF",
       "name": "Norfolk Island",
-      "name_cn": null,
+      "name_cn": "诺福克岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "MP",
       "name": "Northern Mariana Islands",
-      "name_cn": null,
+      "name_cn": "北马里亚纳群岛",
       "has_regions": true,
       "regions_count": 4,
       "regions": [
@@ -5310,20 +5399,22 @@
           "code": "MP-TI",
           "name": "Tinian"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "PN",
       "name": "Pitcairn Islands",
-      "name_cn": null,
+      "name_cn": "皮特凯恩群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "PR",
       "name": "Puerto Rico",
-      "name_cn": null,
+      "name_cn": "波多黎各",
       "has_regions": true,
       "regions_count": 78,
       "regions": [
@@ -5639,28 +5730,31 @@
           "code": "PR-YU",
           "name": "Yauco"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "RE",
       "name": "Réunion",
-      "name_cn": null,
+      "name_cn": "留尼汪",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "BL",
       "name": "Saint Barthélemy",
-      "name_cn": null,
+      "name_cn": "圣巴泰勒米",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "SH",
       "name": "Saint Helena, Ascension, and Tristan da Cunha",
-      "name_cn": null,
+      "name_cn": "圣赫勒拿岛",
       "has_regions": true,
       "regions_count": 3,
       "regions": [
@@ -5676,12 +5770,13 @@
           "code": "SH-TA",
           "name": "Tristan da Cunha"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "KN",
       "name": "Saint Kitts and Nevis",
-      "name_cn": null,
+      "name_cn": "圣基茨和尼维斯",
       "has_regions": true,
       "regions_count": 2,
       "regions": [
@@ -5693,12 +5788,13 @@
           "code": "KN-K",
           "name": "Saint Kitts"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LC",
       "name": "Saint Lucia",
-      "name_cn": null,
+      "name_cn": "圣卢西亚",
       "has_regions": true,
       "regions_count": 10,
       "regions": [
@@ -5742,28 +5838,31 @@
           "code": "LC-11",
           "name": "Vieux Fort"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MF",
       "name": "Saint Martin (French part)",
-      "name_cn": null,
+      "name_cn": "法属圣马丁岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "PM",
       "name": "Saint Pierre and Miquelon",
-      "name_cn": null,
+      "name_cn": "圣皮埃尔和密克隆",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "VC",
       "name": "Saint Vincent and the Grenadines",
-      "name_cn": null,
+      "name_cn": "圣文森特和格林纳丁斯",
       "has_regions": true,
       "regions_count": 6,
       "regions": [
@@ -5791,12 +5890,13 @@
           "code": "VC-05",
           "name": "Saint Patrick"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SM",
       "name": "San Marino",
-      "name_cn": null,
+      "name_cn": "圣马力诺",
       "has_regions": true,
       "regions_count": 9,
       "regions": [
@@ -5836,12 +5936,13 @@
           "code": "SM-09",
           "name": "Serravalle"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SC",
       "name": "Seychelles",
-      "name_cn": null,
+      "name_cn": "塞舌尔",
       "has_regions": true,
       "regions_count": 23,
       "regions": [
@@ -5937,36 +6038,40 @@
           "code": "SC-23",
           "name": "Takamaka"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SX",
       "name": "Sint Maarten",
-      "name_cn": null,
+      "name_cn": "荷属圣马丁",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "GS",
       "name": "South Georgia and South Sandwich Islands",
-      "name_cn": null,
+      "name_cn": "南乔治亚和南桑威奇群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "SJ",
       "name": "Svalbard",
-      "name_cn": null,
+      "name_cn": "斯瓦尔巴",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "ST",
       "name": "São Tomé and Príncipe",
-      "name_cn": null,
+      "name_cn": "圣多美和普林西比",
       "has_regions": true,
       "regions_count": 2,
       "regions": [
@@ -5978,28 +6083,31 @@
           "code": "ST-S",
           "name": "São Tomé"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TK",
       "name": "Tokelau",
-      "name_cn": null,
+      "name_cn": "托克劳群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "TC",
       "name": "Turks and Caicos Islands",
-      "name_cn": null,
+      "name_cn": "特克斯和凯科斯群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "TV",
       "name": "Tuvalu",
-      "name_cn": null,
+      "name_cn": "图瓦卢",
       "has_regions": true,
       "regions_count": 8,
       "regions": [
@@ -6035,12 +6143,13 @@
           "code": "TV-VAI",
           "name": "Vaitupu"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "UM",
       "name": "United States Minor Outlying Islands",
-      "name_cn": null,
+      "name_cn": "美国本土外小岛屿",
       "has_regions": true,
       "regions_count": 9,
       "regions": [
@@ -6080,28 +6189,31 @@
           "code": "UM-79",
           "name": "Wake Island"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "VA",
       "name": "Vatican City (Holy See)",
-      "name_cn": null,
+      "name_cn": "梵蒂冈",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "VG",
       "name": "Virgin Islands (British)",
-      "name_cn": null,
+      "name_cn": "英属维尔京群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "VI",
       "name": "Virgin Islands (U.S.)",
-      "name_cn": null,
+      "name_cn": "美属维尔京群岛",
       "has_regions": true,
       "regions_count": 3,
       "regions": [
@@ -6117,15 +6229,17 @@
           "code": "VI-ST",
           "name": "Saint Thomas"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "WF",
       "name": "Wallis and Futuna",
-      "name_cn": null,
+      "name_cn": "瓦利斯和富图纳",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "BT",
@@ -6214,7 +6328,8 @@
           "code": "BT-34",
           "name": "Zhemgang"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TL",
@@ -6275,7 +6390,8 @@
           "code": "TL-VI",
           "name": "Viqueque"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CF",
@@ -6352,7 +6468,8 @@
           "code": "CF-VK",
           "name": "Vakaga"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "DK",
@@ -6413,7 +6530,8 @@
           "code": "DK-11",
           "name": "Østjylland"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "UA",
@@ -6530,7 +6648,8 @@
           "code": "UA-18",
           "name": "Zhytomyrs'ka Oblast'"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "UZ",
@@ -6595,7 +6714,8 @@
           "code": "UZ-XO",
           "name": "Xorazm"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "UG",
@@ -6620,7 +6740,8 @@
           "code": "UG-W",
           "name": "Western"
         }
-      ]
+      ],
+      "species_count": 1004
     },
     {
       "code": "UY",
@@ -6705,7 +6826,8 @@
           "code": "UY-TT",
           "name": "Treinta y Tres"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TD",
@@ -6786,7 +6908,8 @@
           "code": "TD-WF",
           "name": "Wadi Fira"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "YE",
@@ -6875,7 +6998,8 @@
           "code": "YE-TA",
           "name": "Ta'izz"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AM",
@@ -6928,7 +7052,8 @@
           "code": "AM-SH",
           "name": "Širak"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "IL",
@@ -6961,7 +7086,8 @@
           "code": "IL-JM",
           "name": "Yerushalayim"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "IQ",
@@ -7042,7 +7168,8 @@
           "code": "IQ-WA",
           "name": "Wasit"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "IR",
@@ -7171,7 +7298,8 @@
           "code": "IR-11",
           "name": "Zanjan"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BZ",
@@ -7204,7 +7332,8 @@
           "code": "BZ-TOL",
           "name": "Toledo"
         }
-      ]
+      ],
+      "species_count": 622
     },
     {
       "code": "RU",
@@ -7545,7 +7674,8 @@
           "code": "RU-CHI",
           "name": "Zabaykalsky Krai"
         }
-      ]
+      ],
+      "species_count": 747
     },
     {
       "code": "BG",
@@ -7666,7 +7796,8 @@
           "code": "BG-28",
           "name": "Yambol"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "HR",
@@ -7759,7 +7890,8 @@
           "code": "HR-15",
           "name": "Šibensko-kninska županija"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GM",
@@ -7792,7 +7924,8 @@
           "code": "GM-W",
           "name": "Western"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "IS",
@@ -7833,7 +7966,8 @@
           "code": "IS-3",
           "name": "Vesturland"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GN",
@@ -7874,7 +8008,8 @@
           "code": "GN-N",
           "name": "Nzérékoré, Gouvernorat de"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CG",
@@ -7927,7 +8062,8 @@
           "code": "CG-13",
           "name": "Sangha"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CD",
@@ -7980,7 +8116,8 @@
           "code": "CD-EQ",
           "name": "Équateur"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LY",
@@ -8125,7 +8262,8 @@
           "code": "LY-YJ",
           "name": "Yafran-Jadu"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LR",
@@ -8194,7 +8332,8 @@
           "code": "LR-SI",
           "name": "Sinoe"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GH",
@@ -8243,7 +8382,8 @@
           "code": "GH-WP",
           "name": "Western"
         }
-      ]
+      ],
+      "species_count": 666
     },
     {
       "code": "GA",
@@ -8288,7 +8428,8 @@
           "code": "GA-9",
           "name": "Woleu-Ntem"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "HU",
@@ -8465,7 +8606,8 @@
           "code": "HU-ZE",
           "name": "Zalaegerszeg"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MK",
@@ -8794,7 +8936,8 @@
           "code": "MK-605",
           "name": "Želino"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AQ",
@@ -8802,7 +8945,8 @@
       "name_cn": "南极洲",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "SS",
@@ -8851,7 +8995,8 @@
           "code": "SS-EW",
           "name": "Western Equatoria"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BW",
@@ -8896,7 +9041,8 @@
           "code": "BW-SO",
           "name": "Southern"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "QA",
@@ -8941,7 +9087,8 @@
           "code": "QA-US",
           "name": "Umm Salal"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "RW",
@@ -8970,7 +9117,8 @@
           "code": "RW-01",
           "name": "Ville de Kigali"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LU",
@@ -8991,7 +9139,8 @@
           "code": "LU-L",
           "name": "Luxemburg"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GT",
@@ -9088,7 +9237,8 @@
           "code": "GT-ZA",
           "name": "Zacapa"
         }
-      ]
+      ],
+      "species_count": 767
     },
     {
       "code": "ER",
@@ -9121,7 +9271,8 @@
           "code": "ER-SK",
           "name": "Semien-Keih-Bahri"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SY",
@@ -9186,7 +9337,8 @@
           "code": "SY-TA",
           "name": "Tartus"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CU",
@@ -9259,7 +9411,8 @@
           "code": "CU-05",
           "name": "Villa Clara"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "KG",
@@ -9300,7 +9453,8 @@
           "code": "KG-Y",
           "name": "Ysyk-Köl"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "DJ",
@@ -9333,7 +9487,8 @@
           "code": "DJ-TA",
           "name": "Tadjourah"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "KZ",
@@ -9406,7 +9561,8 @@
           "code": "KZ-ZHA",
           "name": "Zhambyl oblysy"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CM",
@@ -9455,7 +9611,8 @@
           "code": "CM-OU",
           "name": "West"
         }
-      ]
+      ],
+      "species_count": 899
     },
     {
       "code": "TM",
@@ -9484,7 +9641,8 @@
           "code": "TM-M",
           "name": "Mary"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TR",
@@ -9817,7 +9975,8 @@
           "code": "TR-73",
           "name": "Şırnak"
         }
-      ]
+      ],
+      "species_count": 533
     },
     {
       "code": "GY",
@@ -9866,7 +10025,8 @@
           "code": "GY-UT",
           "name": "Upper Takutu-Upper Essequibo"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "EG",
@@ -9983,7 +10143,8 @@
           "code": "EG-SHG",
           "name": "Suhaj"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "ET",
@@ -10036,7 +10197,8 @@
           "code": "ET-TI",
           "name": "Tigrai"
         }
-      ]
+      ],
+      "species_count": 826
     },
     {
       "code": "KI",
@@ -10057,7 +10219,8 @@
           "code": "KI-P",
           "name": "Phoenix Islands"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TJ",
@@ -10082,7 +10245,8 @@
           "code": "TJ-SU",
           "name": "Sughd"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SN",
@@ -10135,7 +10299,8 @@
           "code": "SN-ZG",
           "name": "Ziguinchor"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "RS",
@@ -10220,7 +10385,8 @@
           "code": "RS-12",
           "name": "Šumadija"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SL",
@@ -10245,7 +10411,8 @@
           "code": "SL-W",
           "name": "Western Area (Freetown)"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CY",
@@ -10278,7 +10445,8 @@
           "code": "CY-05",
           "name": "Pafos"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TG",
@@ -10307,7 +10475,8 @@
           "code": "TG-S",
           "name": "Savannes"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "DO",
@@ -10444,7 +10613,8 @@
           "code": "DO-27",
           "name": "Valverde"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AT",
@@ -10489,7 +10659,8 @@
           "code": "AT-9",
           "name": "Wien"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BD",
@@ -10522,7 +10693,8 @@
           "code": "BD-6",
           "name": "Sylhet bibhag"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AO",
@@ -10603,7 +10775,8 @@
           "code": "AO-ZAI",
           "name": "Zaire"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "FM",
@@ -10628,7 +10801,8 @@
           "code": "FM-YAP",
           "name": "Yap"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "NI",
@@ -10705,7 +10879,8 @@
           "code": "NI-SJ",
           "name": "Río San Juan"
         }
-      ]
+      ],
+      "species_count": 771
     },
     {
       "code": "NG",
@@ -10862,7 +11037,8 @@
           "code": "NG-ZA",
           "name": "Zamfara"
         }
-      ]
+      ],
+      "species_count": 764
     },
     {
       "code": "NE",
@@ -10903,7 +11079,8 @@
           "code": "NE-7",
           "name": "Zinder"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "PS",
@@ -10911,7 +11088,8 @@
       "name_cn": "巴勒斯坦",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "PK",
@@ -10952,7 +11130,8 @@
           "code": "PK-SD",
           "name": "Sind"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "PY",
@@ -11033,7 +11212,8 @@
           "code": "PY-12",
           "name": "Ñeembucú"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BH",
@@ -11062,7 +11242,8 @@
           "code": "BH-17",
           "name": "Ash Shamaliyah"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BF",
@@ -11251,7 +11432,8 @@
           "code": "BF-ZOU",
           "name": "Zoundwéogo"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BI",
@@ -11324,7 +11506,8 @@
           "code": "BI-RY",
           "name": "Ruyigi"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GR",
@@ -11389,7 +11572,8 @@
           "code": "GR-C",
           "name": "Western Macedonia"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "PW",
@@ -11462,7 +11646,8 @@
           "code": "PW-370",
           "name": "Sonsorol"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SB",
@@ -11511,7 +11696,8 @@
           "code": "SB-WE",
           "name": "Western"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LV",
@@ -11996,7 +12182,8 @@
           "code": "LV-110",
           "name": "Zilupe"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CZ",
@@ -12061,7 +12248,8 @@
           "code": "CZ-US",
           "name": "Ústecký kraj"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MD",
@@ -12218,7 +12406,8 @@
           "code": "MD-SV",
           "name": "Ștefan Vodă"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MA",
@@ -12291,7 +12480,8 @@
           "code": "MA-03",
           "name": "Taza-Al Hoceima-Taounate"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BN",
@@ -12316,7 +12506,8 @@
           "code": "BN-TU",
           "name": "Tutong"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "FJ",
@@ -12345,7 +12536,8 @@
           "code": "FJ-W",
           "name": "Western"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SZ",
@@ -12370,7 +12562,8 @@
           "code": "SZ-SH",
           "name": "Shiselweni"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SK",
@@ -12411,7 +12604,8 @@
           "code": "SK-ZI",
           "name": "Žilinský kraj"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SI",
@@ -13192,7 +13386,8 @@
           "code": "SI-193",
           "name": "Žužemberk"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LK",
@@ -13301,7 +13496,8 @@
           "code": "LK-44",
           "name": "Vavuniya"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "NC",
@@ -13309,7 +13505,8 @@
       "name_cn": "新喀里多尼亚",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "KP",
@@ -13362,7 +13559,8 @@
           "code": "KP-10",
           "name": "Yanggang-do"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "KH",
@@ -13467,7 +13665,8 @@
           "code": "KH-21",
           "name": "Takêv"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GL",
@@ -13475,7 +13674,8 @@
       "name_cn": "格陵兰",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "GE",
@@ -13532,7 +13732,8 @@
           "code": "GE-TB",
           "name": "T'bilisi"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BE",
@@ -13553,7 +13754,8 @@
           "code": "BE-WAL",
           "name": "Wallonie"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MR",
@@ -13614,7 +13816,8 @@
           "code": "MR-06",
           "name": "Trarza"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TO",
@@ -13643,7 +13846,8 @@
           "code": "TO-05",
           "name": "Vava'u"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SA",
@@ -13704,7 +13908,8 @@
           "code": "SA-14",
           "name": "‘Asir"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GF",
@@ -13712,7 +13917,8 @@
       "name_cn": "法属圭亚那",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "PF",
@@ -13741,7 +13947,8 @@
           "code": "PF-WI",
           "name": "Windward Islands"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "FO",
@@ -13749,7 +13956,8 @@
       "name_cn": "法罗群岛",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "PL",
@@ -13822,7 +14030,8 @@
           "code": "PL-ZP",
           "name": "Zachodniopomorskie"
         }
-      ]
+      ],
+      "species_count": 560
     },
     {
       "code": "BA",
@@ -13839,7 +14048,8 @@
           "code": "BA-SRP",
           "name": "Republika Srpska"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "ZW",
@@ -13888,7 +14098,8 @@
           "code": "ZW-MI",
           "name": "Midlands"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "HN",
@@ -13969,7 +14180,8 @@
           "code": "HN-YO",
           "name": "Yoro"
         }
-      ]
+      ],
+      "species_count": 809
     },
     {
       "code": "HT",
@@ -14018,7 +14230,8 @@
           "code": "HT-SE",
           "name": "Sud-Est"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "IE",
@@ -14043,7 +14256,8 @@
           "code": "IE-U",
           "name": "Ulster"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "EE",
@@ -14112,7 +14326,8 @@
           "code": "EE-86",
           "name": "Võrumaa"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "JM",
@@ -14177,7 +14392,8 @@
           "code": "JM-10",
           "name": "Westmoreland"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TT",
@@ -14246,7 +14462,8 @@
           "code": "TT-TUP",
           "name": "Tunapuna-Piarco"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CH",
@@ -14359,7 +14576,8 @@
           "code": "CH-ZH",
           "name": "Zürich"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "VU",
@@ -14392,7 +14610,8 @@
           "code": "VU-TOB",
           "name": "Torba"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "BY",
@@ -14425,7 +14644,8 @@
           "code": "BY-VI",
           "name": "Vicebskaja voblasc'"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "GI",
@@ -14433,7 +14653,8 @@
       "name_cn": "直布罗陀",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "KW",
@@ -14466,7 +14687,8 @@
           "code": "KW-MU",
           "name": "Mubarak al Kabir"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "CI",
@@ -14551,7 +14773,8 @@
           "code": "CI-08",
           "name": "Zanzan (Région du)"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "TN",
@@ -14656,7 +14879,8 @@
           "code": "TN-22",
           "name": "Zaghouan"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LT",
@@ -14705,7 +14929,8 @@
           "code": "LT-SA",
           "name": "Šiauliu Apskritis"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SO",
@@ -14786,7 +15011,8 @@
           "code": "SO-WO",
           "name": "Woqooyi Galbeed"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "JO",
@@ -14843,7 +15069,8 @@
           "code": "JO-MN",
           "name": "Ma‘an"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "NA",
@@ -14904,7 +15131,8 @@
           "code": "NA-OD",
           "name": "Otjozondjupa"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MM",
@@ -14969,7 +15197,8 @@
           "code": "MM-06",
           "name": "Yangon"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "RO",
@@ -15146,7 +15375,8 @@
           "code": "RO-VL",
           "name": "Vâlcea"
         }
-      ]
+      ],
+      "species_count": 392
     },
     {
       "code": "LA",
@@ -15227,7 +15457,8 @@
           "code": "LA-XE",
           "name": "Xékong [Sékong]"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SD",
@@ -15296,7 +15527,8 @@
           "code": "SD-NW",
           "name": "White Nile"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SR",
@@ -15345,7 +15577,8 @@
           "code": "SR-WA",
           "name": "Wanica"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MZ",
@@ -15394,7 +15627,8 @@
           "code": "MZ-Q",
           "name": "Zambézia"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LS",
@@ -15443,7 +15677,8 @@
           "code": "LS-K",
           "name": "Thaba-Tseka"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "SV",
@@ -15508,7 +15743,8 @@
           "code": "SV-US",
           "name": "Usulután"
         }
-      ]
+      ],
+      "species_count": 578
     },
     {
       "code": "WS",
@@ -15561,7 +15797,8 @@
           "code": "WS-VS",
           "name": "Vaisigano"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "PT",
@@ -15650,7 +15887,8 @@
           "code": "PT-07",
           "name": "Évora"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MN",
@@ -15747,7 +15985,8 @@
           "code": "MN-055",
           "name": "Övörhangay"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "EH",
@@ -15755,7 +15994,8 @@
       "name_cn": "西撒哈拉",
       "has_regions": false,
       "regions_count": 0,
-      "regions": []
+      "regions": [],
+      "species_count": 0
     },
     {
       "code": "BJ",
@@ -15812,7 +16052,8 @@
           "code": "BJ-ZO",
           "name": "Zou"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "ZM",
@@ -15857,7 +16098,8 @@
           "code": "ZM-01",
           "name": "Western"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AZ",
@@ -16150,7 +16392,8 @@
           "code": "AZ-SA",
           "name": "Şəki Municipality"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "DZ",
@@ -16351,7 +16594,8 @@
           "code": "DZ-12",
           "name": "Tébessa"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AL",
@@ -16408,7 +16652,8 @@
           "code": "AL-12",
           "name": "Vlorë"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "OM",
@@ -16461,7 +16706,8 @@
           "code": "OM-MA",
           "name": "Muscat"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "AE",
@@ -16498,7 +16744,8 @@
           "code": "AE-UQ",
           "name": "Umm al-Qaiwain"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MW",
@@ -16519,7 +16766,8 @@
           "code": "MW-S",
           "name": "Southern"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MH",
@@ -16536,7 +16784,8 @@
           "code": "MH-T",
           "name": "Ratak chain"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "MT",
@@ -16817,7 +17066,8 @@
           "code": "MT-68",
           "name": "Zurrieq"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "ML",
@@ -16862,7 +17112,8 @@
           "code": "ML-6",
           "name": "Tombouctou"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "LB",
@@ -16903,7 +17154,8 @@
           "code": "LB-NA",
           "name": "Nabatîyé"
         }
-      ]
+      ],
+      "species_count": 0
     },
     {
       "code": "ME",
@@ -16996,7 +17248,8 @@
           "code": "ME-21",
           "name": "Žabljak"
         }
-      ]
+      ],
+      "species_count": 0
     }
   ]
 }

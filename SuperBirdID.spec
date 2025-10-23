@@ -15,8 +15,10 @@ a = Analysis(
         ('ebird_regions.json', '.'),  # eBird 国家和地区数据
         ('offline_ebird_data', 'offline_ebird_data'),
         ('exiftool_bundle', 'exiftool_bundle'),  # 完整的 ExifTool bundle（包含所有依赖）
+        ('SuperBirdID_API.py', '.'),  # API 服务器模块
+        ('ebird_country_filter.py', '.'),  # eBird 过滤器模块
     ],
-    hiddenimports=[],
+    hiddenimports=['SuperBirdID_API', 'ebird_country_filter'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -39,7 +41,7 @@ exe = EXE(
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
-    target_arch='universal2',  # 支持 Apple Silicon 和 Intel
+    target_arch=None,  # 使用当前架构（避免 cv2 兼容性问题）
     codesign_identity=None,
     entitlements_file=None,
     icon=['icon.icns'],
@@ -59,6 +61,8 @@ app = BUNDLE(
     icon='icon.icns',
     bundle_identifier='com.superbirdid.app',
     info_plist={
+        'CFBundleShortVersionString': '3.2.1',
+        'CFBundleVersion': '3.2.1',
         'NSSupportsAutomaticTermination': False,
         'NSSupportsAutomaticGraphicsSwitching': True,
         'NSAppSleepDisabled': True,

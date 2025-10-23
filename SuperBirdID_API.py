@@ -5,6 +5,8 @@ SuperBirdID API服务器
 可被Lightroom插件等外部应用调用
 """
 
+__version__ = "3.2.1"
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -15,13 +17,14 @@ import tempfile
 import torch
 import numpy as np
 import cv2
+import json
 
 # 导入核心识别模块
 from SuperBirdId import (
     load_image, lazy_load_classifier, lazy_load_bird_info, lazy_load_database,
     extract_gps_from_exif, get_region_from_gps,
     write_bird_name_to_exif, get_bird_description_from_db,
-    write_bird_caption_to_exif,
+    write_bird_caption_to_exif, get_user_data_dir, script_dir,
     YOLOBirdDetector, YOLO_AVAILABLE, EBIRD_FILTER_AVAILABLE, DATABASE_AVAILABLE
 )
 
@@ -34,6 +37,35 @@ classifier = None
 bird_info_dict = None
 db_manager = None
 ebird_filter = None
+
+# 全局配置（从 GUI 配置文件读取）
+default_country_code = None
+default_region_code = None
+use_ebird_filter = True
+
+def load_gui_settings():
+    """
+    读取 GUI 配置文件，获取用户最后设置的国家/地区
+    返回: (country_code, region_code, use_ebird)
+    """
+    config_file = os.path.join(script_dir, 'gui_settings.json')
+
+    if os.path.exists(config_file):
+        try:
+            with open(config_file, 'r', encoding='utf-8') as f:
+                settings = json.load(f)
+                country_code = settings.get('country_code')
+                region_code = settings.get('region_code')
+                use_ebird = settings.get('use_ebird', True)
+
+                print(f"📖 读取GUI配置: country_code={country_code}, region_code={region_code}, use_ebird={use_ebird}")
+                return country_code, region_code, use_ebird
+        except Exception as e:
+            print(f"⚠️ 读取GUI配置失败: {e}")
+    else:
+        print(f"ℹ️ 未找到GUI配置文件: {config_file}")
+
+    return None, None, True
 
 def ensure_models_loaded():
     """确保模型已加载"""
@@ -114,7 +146,7 @@ def health_check():
     return jsonify({
         'status': 'ok',
         'service': 'SuperBirdID API',
-        'version': '3.0.1',
+        'version': '3.1.0',
         'yolo_available': YOLO_AVAILABLE,
         'ebird_available': EBIRD_FILTER_AVAILABLE
     })
@@ -209,23 +241,85 @@ def recognize_bird():
 
         # GPS信息提取
         gps_info = None
+        lat, lon = None, None
         if use_gps and image_path:
             lat, lon, location_info = extract_gps_from_exif(image_path)
             if lat and lon:
-                region = get_region_from_gps(lat, lon)
+                region, country_code, region_info = get_region_from_gps(lat, lon)
                 gps_info = {
                     'latitude': lat,
                     'longitude': lon,
                     'region': region,
+                    'country_code': country_code,
                     'info': location_info
                 }
 
-        # 执行识别
-        predictions = predict_bird(processed_image, top_k=top_k)
+        # ===== 新增：eBird 地理筛选逻辑 =====
+        ebird_species_set = None
+        filter_source = "全球模式"
 
-        # 处理结果
+        if use_ebird_filter and EBIRD_FILTER_AVAILABLE:
+            try:
+                # 初始化 eBird 过滤器
+                from ebird_country_filter import eBirdCountryFilter
+                EBIRD_API_KEY = os.environ.get('EBIRD_API_KEY', '60nan25sogpo')
+                cache_dir = os.path.join(get_user_data_dir(), 'ebird_cache')
+                offline_dir = os.path.join(script_dir, "offline_ebird_data")
+                ebird_filter = eBirdCountryFilter(EBIRD_API_KEY, cache_dir=cache_dir, offline_dir=offline_dir)
+
+                # 优先级 1：GPS 精确位置（25km 范围）
+                if lat and lon:
+                    print(f"🎯 使用 GPS 精确位置筛选: ({lat:.3f}, {lon:.3f})")
+                    ebird_species_set = ebird_filter.get_location_species_list(lat, lon, 25)
+                    if ebird_species_set:
+                        filter_source = f"GPS 25km ({len(ebird_species_set)} 种)"
+                        print(f"✓ GPS 筛选成功: {len(ebird_species_set)} 个物种")
+                    else:
+                        print("⚠️ GPS 筛选失败，尝试国家级别...")
+
+                # 优先级 2：配置文件中的国家/地区
+                if not ebird_species_set and default_country_code:
+                    print(f"🌍 使用配置文件国家筛选: {default_country_code}")
+                    region_code = default_region_code if default_region_code else default_country_code
+                    ebird_species_set = ebird_filter.get_country_species_list(region_code)
+                    if ebird_species_set:
+                        filter_source = f"配置国家 {region_code} ({len(ebird_species_set)} 种)"
+                        print(f"✓ 国家筛选成功: {len(ebird_species_set)} 个物种")
+                    else:
+                        print("⚠️ 国家筛选失败")
+
+                # 优先级 3：GPS 推断的国家
+                if not ebird_species_set and gps_info and gps_info.get('country_code'):
+                    gps_country = gps_info['country_code']
+                    print(f"🌍 使用 GPS 推断国家筛选: {gps_country}")
+                    ebird_species_set = ebird_filter.get_country_species_list(gps_country)
+                    if ebird_species_set:
+                        filter_source = f"GPS 国家 {gps_country} ({len(ebird_species_set)} 种)"
+                        print(f"✓ GPS 国家筛选成功: {len(ebird_species_set)} 个物种")
+
+                if not ebird_species_set:
+                    print("ℹ️ 所有筛选方法都失败，使用全球模式")
+                    filter_source = "全球模式（无筛选）"
+
+            except Exception as e:
+                print(f"❌ eBird 筛选初始化失败: {e}")
+                import traceback
+                traceback.print_exc()
+                filter_source = "全球模式（筛选失败）"
+
+        # 执行识别（获取更多候选结果用于筛选）
+        predict_top_k = 100 if ebird_species_set else top_k
+        predictions = predict_bird(processed_image, top_k=predict_top_k)
+
+        # 处理结果并应用 eBird 筛选
         results = []
-        for i, (class_idx, confidence) in enumerate(predictions, 1):
+        filtered_out = []  # 被筛选掉的结果
+
+        for class_idx, confidence in predictions:
+            # 跳过置信度过低的结果
+            if confidence < 5.0:
+                continue
+
             # bird_info_dict 是数组，检查索引范围
             if 0 <= class_idx < len(bird_info_dict):
                 bird_data = bird_info_dict[class_idx]
@@ -235,35 +329,59 @@ def recognize_bird():
                 en_name = bird_data[1] if len(bird_data) > 1 else "Unknown"
                 scientific_name = bird_data[2] if len(bird_data) > 2 else ""
 
-                # eBird匹配检查
+                # eBird 筛选检查
                 ebird_match = False
-                if use_gps and gps_info and DATABASE_AVAILABLE and db_manager:
-                    ebird_match = db_manager.check_species_in_region(
-                        scientific_name,
-                        gps_info['region']
-                    )
+                should_filter_out = False
 
-                # 从数据库获取详细描述
-                description = None
-                if DATABASE_AVAILABLE and db_manager:
-                    bird_detail = db_manager.get_bird_by_class_id(class_idx)
-                    if bird_detail:
-                        description = bird_detail.get('short_description_zh')
+                if ebird_species_set and db_manager:
+                    # 获取 eBird 代码
+                    ebird_code = db_manager.get_ebird_code_by_english_name(en_name)
 
-                result_item = {
-                    'rank': i,
-                    'cn_name': cn_name,
-                    'en_name': en_name,
-                    'scientific_name': scientific_name,
-                    'confidence': float(confidence),
-                    'ebird_match': ebird_match
-                }
+                    if ebird_code and ebird_code in ebird_species_set:
+                        ebird_match = True
+                    else:
+                        # 不在列表中，过滤掉
+                        should_filter_out = True
+                        filtered_out.append({
+                            'cn_name': cn_name,
+                            'en_name': en_name,
+                            'confidence': confidence
+                        })
 
-                # 只在有描述时添加
-                if description:
-                    result_item['description'] = description
+                # 如果不需要过滤，或者没有启用筛选，则添加到结果
+                if not should_filter_out:
+                    # 从数据库获取详细描述
+                    description = None
+                    if DATABASE_AVAILABLE and db_manager:
+                        bird_detail = db_manager.get_bird_by_class_id(class_idx)
+                        if bird_detail:
+                            description = bird_detail.get('short_description_zh')
 
-                results.append(result_item)
+                    result_item = {
+                        'rank': len(results) + 1,
+                        'cn_name': cn_name,
+                        'en_name': en_name,
+                        'scientific_name': scientific_name,
+                        'confidence': float(confidence),
+                        'ebird_match': ebird_match
+                    }
+
+                    # 只在有描述时添加
+                    if description:
+                        result_item['description'] = description
+
+                    results.append(result_item)
+
+                    # 只保留 top_k 个结果
+                    if len(results) >= top_k:
+                        break
+
+        # 如果筛选后没有结果，记录被筛选的前几个
+        if ebird_species_set and len(results) == 0 and len(filtered_out) > 0:
+            print(f"⚠️ eBird筛选导致所有结果被过滤")
+            print(f"   被过滤的前3个: {filtered_out[:3]}")
+            # 可以选择返回警告信息
+            # 这里我们仍返回空结果，但在响应中添加提示
 
         # 清理临时文件
         if temp_file:
@@ -277,8 +395,14 @@ def recognize_bird():
             'success': True,
             'results': results,
             'yolo_info': yolo_msg,
-            'gps_info': gps_info
+            'gps_info': gps_info,
+            'filter_source': filter_source  # 添加筛选数据来源信息
         }
+
+        # 如果所有结果都被过滤，添加警告
+        if ebird_species_set and len(results) == 0 and len(filtered_out) > 0:
+            response['warning'] = f"地理筛选：未找到匹配结果。AI识别的前3个物种不在{filter_source}列表中"
+            response['filtered_top3'] = filtered_out[:3]
 
         return jsonify(response)
 
@@ -408,7 +532,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print("=" * 60)
-    print("🐦 SuperBirdID API 服务器")
+    print(f"🐦 SuperBirdID API 服务器 v{__version__}")
     print("=" * 60)
     print(f"监听地址: http://{args.host}:{args.port}")
     print(f"健康检查: http://{args.host}:{args.port}/health")
@@ -417,6 +541,19 @@ if __name__ == '__main__':
     print("=" * 60)
     print("按 Ctrl+C 停止服务器")
     print("=" * 60)
+
+    # 读取 GUI 配置
+    print("\n📖 读取用户配置...")
+    # 在模块顶层不需要 global 声明
+    default_country_code, default_region_code, use_ebird_filter = load_gui_settings()
+
+    if default_country_code:
+        region_info = default_region_code if default_region_code else default_country_code
+        print(f"✓ 默认地区: {region_info}")
+    else:
+        print("ℹ️ 未设置默认地区，将使用全球模式")
+
+    print(f"✓ eBird筛选: {'启用' if use_ebird_filter else '禁用'}")
 
     # 预加载模型
     print("\n正在预加载模型...")
