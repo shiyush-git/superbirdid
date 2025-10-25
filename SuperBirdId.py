@@ -114,7 +114,7 @@ class YOLOBirdDetector:
             return
 
         if model_path is None:
-            model_path = os.path.join(script_dir, 'yolo11l.pt')
+            model_path = os.path.join(script_dir, 'yolo_models/yolo11l.pt')
 
         try:
             self.model = YOLO(model_path)
